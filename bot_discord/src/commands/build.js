@@ -63,17 +63,90 @@ export async function execute(interaction) {
     return;
   }
   
-  // Équipement recommandé par rôle
-  let gearSuggestion = '';
-  if (role === 'tank') {
-    gearSuggestion = 'Casque Judicateur/Gardien + Armure Gardien/Royale + Bottes Soldat + Soupe/Omelette T7';
-  } else if (role === 'healer') {
-    gearSuggestion = 'Capuche Mage/Druide + Robe Mage/Druide + Sandales Mage + Omelette T7';
-  } else if (role === 'melee_dps') {
-    gearSuggestion = 'Casque Soldat/Assassin + Armure Chasseur/Assassin + Bottes Soldat + Ragout T8';
-  } else if (role === 'ranged_dps') {
-    gearSuggestion = 'Capuche Traqueur/Assassin + Robe Druide/Veste Assassin + Sandales Royales + Ragout T8';
-  }
+  // Équipement recommandé par arme spécifique
+  const getWeaponGear = (weapon) => {
+    const weaponName = weapon.name.toLowerCase();
+    const weaponRole = weapon.role.toLowerCase();
+    
+    // Tanks spécifiques
+    if (weaponName.includes('masse incube') || weaponName.includes('marteaux forgés')) {
+      return 'Mandebrume + Capuche Assassin + Armure Gardien + Sandales Culte + Bridgewatch + Omelette T7';
+    } else if (weaponName.includes('garde-serments') || weaponName.includes('marteau')) {
+      return 'Tourmenteur + Judicateur + Armure Royale + Bottes Royales + Fort Sterling + Omelette T8';
+    } else if (weaponRole.includes('tank')) {
+      return 'Casque Gardien + Armure Gardien + Bottes Soldat + Cape + Soupe T7';
+    }
+    
+    // Healers spécifiques
+    else if (weaponName.includes('sacré') || weaponName.includes('divin')) {
+      return 'Capuche Mage + Robe Mage + Sandales Mage + Cape Lymhurst + Omelette T7';
+    } else if (weaponName.includes('nature') || weaponName.includes('druidique')) {
+      return 'Capuche Druide + Robe Druide + Sandales Druide + Cape Lymhurst + Omelette T7';
+    } else if (weaponName.includes('déchu') || weaponName.includes('fléau')) {
+      return 'Capuchon Druide + Robe Royale + Chaussures Cuir + Cape Lymhurst + Omelette T7';
+    } else if (weaponRole.includes('heal')) {
+      return 'Capuche Mage + Robe Mage + Sandales Mage + Cape + Omelette T7';
+    }
+    
+    // DPS Mêlée assassins
+    else if (weaponName.includes('saigneur') || weaponName.includes('dague') || weaponName.includes('griffes')) {
+      return 'Capuche Assassin + Veste Assassin + Chaussures Soldat + Cape Martlock + Pâté Anguille T8';
+    }
+    // DPS Mêlée burst
+    else if (weaponName.includes('claymore') || weaponName.includes('adoube-roi') || weaponName.includes('galatine')) {
+      return 'Casque Soldat + Armure Chasseur + Bottes Soldat + Cape Martlock + Ragout T8';
+    }
+    // DPS Mêlée sustain
+    else if (weaponName.includes('pattes') || weaponName.includes('hallebarde') || weaponName.includes('faux')) {
+      return 'Casque Chasseur + Armure Chasseur + Bottes Chasseur + Cape + Ragout T8';
+    }
+    // DPS Mêlée lance/glaive
+    else if (weaponName.includes('lance') || weaponName.includes('glaive') || weaponName.includes('trinité')) {
+      return 'Casque Soldat + Armure Mercenaire + Bottes Soldat + Cape + Ragout T8';
+    }
+    // DPS Mêlée générique
+    else if (weaponRole.includes('dps') && !weaponRole.includes('ranged')) {
+      return 'Casque Soldat + Armure Chasseur + Bottes Soldat + Cape + Ragout T8';
+    }
+    
+    // DPS Distance mage burst
+    else if (weaponName.includes('ardent') || weaponName.includes('feu') || weaponName.includes('infernal')) {
+      return 'Capuche Assassin + Robe Druide + Sandales Royales + Cape Caerleon + Ragout T8';
+    }
+    // DPS Distance mage kite
+    else if (weaponName.includes('glacial') || weaponName.includes('givre') || weaponName.includes('arctique')) {
+      return 'Capuche Mage + Robe Mage + Sandales Mage + Cape Caerleon + Ragout T8';
+    }
+    // DPS Distance cursed
+    else if (weaponName.includes('maudit') || weaponName.includes('ombre') || weaponName.includes('démoniaque')) {
+      return 'Capuche Traqueur + Robe Druide + Sandales Royales + Cape Caerleon + Ragout Anguille T8';
+    }
+    // DPS Distance archer
+    else if (weaponName.includes('arc') || weaponName.includes('bow')) {
+      return 'Capuche Traqueur + Veste Assassin + Bottes Soldat + Cape Martlock + Ragout T8';
+    }
+    // DPS Distance arbalète
+    else if (weaponName.includes('arbalète') || weaponName.includes('carreaux')) {
+      return 'Capuche Chasseur + Veste Chasseur + Bottes Chasseur + Cape + Ragout T8';
+    }
+    // DPS Distance générique
+    else if (weaponRole.includes('ranged') || weaponRole.includes('mage')) {
+      return 'Capuche Traqueur + Robe Druide + Sandales Royales + Cape + Ragout T8';
+    }
+    
+    // Support
+    else if (weaponRole.includes('support')) {
+      return 'Capuche Assassin + Veste Royale + Chaussures Cuir + Cape Bridgewatch + Omelette T7';
+    }
+    
+    // Scout
+    else if (weaponRole.includes('scout')) {
+      return 'Casque Judicateur + Armure Crépusculaire + Bottes Pêcheur + Cape Fort Sterling + Tourte T7';
+    }
+    
+    // Défaut
+    return 'Équipement adapté au rôle + Cape + Nourriture T7-T8';
+  };
   
   const roleIcon = roleIcons.Tank || '⚔️';
   
@@ -89,7 +162,7 @@ export async function execute(interaction) {
     
     const fields = pageWeapons.map(w => ({
       name: `${w.icon || roleIcon} ${w.name} (${w.tier})`,
-      value: `📋 ${w.role}\n🎽 ${gearSuggestion}`,
+      value: `📋 ${w.role}\n🎽 ${getWeaponGear(w)}`,
       inline: false
     }));
     
