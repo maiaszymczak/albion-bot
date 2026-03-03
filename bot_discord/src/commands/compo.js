@@ -22,14 +22,14 @@ export const data = new SlashCommandBuilder()
   )
   .addIntegerOption(option =>
     option.setName('nombre')
-      .setDescription('Nombre de joueurs (pour Raid Avalonian ou Personnalisé)')
+      .setDescription('Nombre de joueurs (UNIQUEMENT pour Raid Avalonian ou Personnalisé)')
       .setMinValue(1)
       .setMaxValue(50)
       .setRequired(false)
   )
   .addStringOption(option =>
     option.setName('style')
-      .setDescription('Style de composition (pour Personnalisé uniquement)')
+      .setDescription('Style (UNIQUEMENT pour Personnalisé)')
       .setRequired(false)
       .addChoices(
         { name: 'Équilibrée (par défaut)', value: 'balanced' },

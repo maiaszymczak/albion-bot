@@ -1,4 +1,32 @@
-import { weapons, roles, roleIcons, tierColors } from '../data/albion-data.js';
+import { weaponsByTree, roles, roleIcons, tierColors } from '../data/albion-data.js';
+
+/**
+ * Récupère toutes les armes pour un rôle donné
+ */
+function getWeaponsForRole(role) {
+  const allWeapons = [];
+  
+  // Parcourir tous les arbres d'armes et filtrer par rôle
+  for (const tree of Object.values(weaponsByTree)) {
+    for (const weapon of tree) {
+      const weaponRole = weapon.role.toLowerCase();
+      
+      if (role === roles.TANK && (weaponRole.includes('tank') || weaponRole.includes('frontline'))) {
+        allWeapons.push(weapon);
+      } else if (role === roles.MELEE_DPS && weaponRole.includes('dps') && !weaponRole.includes('ranged')) {
+        allWeapons.push(weapon);
+      } else if (role === roles.RANGED_DPS && (weaponRole.includes('ranged') || weaponRole.includes('mage') || weaponRole.includes('aoe') || weaponRole.includes('burst'))) {
+        allWeapons.push(weapon);
+      } else if (role === roles.HEALER && (weaponRole.includes('heal') || weaponRole.includes('support'))) {
+        allWeapons.push(weapon);
+      } else if (role === roles.SCOUT && (weaponRole.includes('scout') || weaponRole.includes('vision'))) {
+        allWeapons.push(weapon);
+      }
+    }
+  }
+  
+  return allWeapons.length > 0 ? allWeapons : Object.values(weaponsByTree).flat();
+}
 
 /**
  * Génère une composition personnalisée basée sur un nombre de joueurs
@@ -58,11 +86,14 @@ export function generateComposition(template) {
   
   for (const roleConfig of template) {
     for (let i = 0; i < roleConfig.count; i++) {
-      const weaponPool = weapons[roleConfig.role];
+      const weaponPool = getWeaponsForRole(roleConfig.role);
       const randomWeapon = weaponPool[Math.floor(Math.random() * weaponPool.length)];
       composition.push({
         position: composition.length + 1,
-        ...randomWeapon
+        name: randomWeapon.name,
+        type: randomWeapon.tier,
+        role: randomWeapon.role,
+        gear: `${randomWeapon.tier} - ${randomWeapon.hands === 1 ? 'Main unique' : '2 Mains'}`
       });
     }
   }
@@ -164,7 +195,7 @@ export function formatCompositionEmbed(compType, composition) {
  * Génère des suggestions alternatives
  */
 export function generateAlternatives(role) {
-  const weaponPool = weapons[role];
+  const weaponPool = getWeaponsForRole(role);
   if (!weaponPool || weaponPool.length <= 1) return null;
   
   const alternatives = [...weaponPool]
