@@ -35,6 +35,11 @@ app.listen(PORT, () => {
   console.log(`🌐 Serveur HTTP démarré sur le port ${PORT}`);
 });
 
+// Keepalive - ping toutes les 5 minutes pour éviter l'inactivité
+setInterval(() => {
+  console.log(`💓 Keepalive - Bot actif - ${new Date().toISOString()}`);
+}, 5 * 60 * 1000);
+
 // Création du client Discord
 const client = new Client({
   intents: [
@@ -66,6 +71,27 @@ for (const file of commandFiles) {
 client.once(Events.ClientReady, c => {
   console.log(`🤖 Bot connecté en tant que ${c.user.tag}`);
   console.log(`📊 Présent sur ${c.guilds.cache.size} serveur(s)`);
+});
+
+// Gestion des erreurs et reconnexions
+client.on('error', error => {
+  console.error('❌ Erreur Discord:', error);
+});
+
+client.on('warn', info => {
+  console.warn('⚠️ Warning Discord:', info);
+});
+
+client.on('shardError', error => {
+  console.error('❌ Erreur de shard:', error);
+});
+
+client.on('shardReconnecting', () => {
+  console.log('🔄 Reconnexion au gateway Discord...');
+});
+
+client.on('shardResume', () => {
+  console.log('✅ Connexion rétablie au gateway Discord');
 });
 
 // Événement: Interaction (commandes slash)

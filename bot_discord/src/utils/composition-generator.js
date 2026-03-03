@@ -11,15 +11,31 @@ function getWeaponsForRole(role) {
     for (const weapon of tree) {
       const weaponRole = weapon.role.toLowerCase();
       
+      // Tank : doit contenir 'tank' ou 'frontline'
       if (role === roles.TANK && (weaponRole.includes('tank') || weaponRole.includes('frontline'))) {
         allWeapons.push(weapon);
-      } else if (role === roles.MELEE_DPS && weaponRole.includes('dps') && !weaponRole.includes('ranged')) {
+      } 
+      // Melee DPS : doit contenir 'dps' MAIS PAS 'tank', 'heal', 'ranged'
+      else if (role === roles.MELEE_DPS && weaponRole.includes('dps') && 
+               !weaponRole.includes('tank') && 
+               !weaponRole.includes('heal') && 
+               !weaponRole.includes('ranged')) {
         allWeapons.push(weapon);
-      } else if (role === roles.RANGED_DPS && (weaponRole.includes('ranged') || weaponRole.includes('mage') || weaponRole.includes('aoe') || weaponRole.includes('burst'))) {
+      } 
+      // Ranged DPS : doit contenir un mot-clé ranged MAIS PAS 'tank', 'heal'
+      else if (role === roles.RANGED_DPS && 
+               (weaponRole.includes('ranged') || weaponRole.includes('mage') || 
+                weaponRole.includes('aoe') || weaponRole.includes('burst')) &&
+               !weaponRole.includes('tank') && 
+               !weaponRole.includes('heal')) {
         allWeapons.push(weapon);
-      } else if (role === roles.HEALER && (weaponRole.includes('heal') || weaponRole.includes('support'))) {
+      } 
+      // Healer : doit contenir 'heal' MAIS PAS 'tank'
+      else if (role === roles.HEALER && weaponRole.includes('heal') && !weaponRole.includes('tank')) {
         allWeapons.push(weapon);
-      } else if (role === roles.SCOUT && (weaponRole.includes('scout') || weaponRole.includes('vision'))) {
+      } 
+      // Scout : doit contenir 'scout' ou 'vision'
+      else if (role === roles.SCOUT && (weaponRole.includes('scout') || weaponRole.includes('vision'))) {
         allWeapons.push(weapon);
       }
     }
