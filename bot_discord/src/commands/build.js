@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { weapons, weaponsByTree, roleIcons } from '../data/albion-data.js';
 import { generateAlternatives } from '../utils/composition-generator.js';
 
@@ -77,25 +77,81 @@ export async function execute(interaction) {
   
   const roleIcon = roleIcons.Tank || '⚔️';
   
-  // Créer des fields pour chaque arme (max 10 pour ne pas surcharger)
-  const fields = allWeapons
-    .slice(0, 10)
-    .map(w => ({
+  // Pagination : 10 armes par page
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(allWeapons.length / itemsPerPage);
+  let currentPage = 0;
+  
+  const generateEmbed = (page) => {
+    const start = page * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageWeapons = allWeapons.slice(start, end);
+    
+    const fields = pageWeapons.map(w => ({
       name: `${w.icon || roleIcon} ${w.name} (${w.tier})`,
       value: `📋 ${w.role}\n🎽 ${gearSuggestion}`,
       inline: false
     }));
-  
-  const embed = {
-    color: roleColors[role] || 0x0099FF,
-    title: `${roleIcon} Builds disponibles - ${roleNames[role]}`,
-    description: `${allWeapons.length} arme(s) disponible(s) pour ce rôle`,
-    fields: fields,
-    footer: {
-      text: 'Albion Online - Guide des Builds'
-    },
-    timestamp: new Date().toISOString()
+    
+    return {
+      color: roleColors[role] || 0x0099FF,
+      title: `${roleIcon} Builds disponibles - ${roleNames[role]}`,
+      description: `${allWeapons.length} arme(s) disponible(s) • Page ${page + 1}/${totalPages}`,
+      fields: fields,
+      footer: {
+        text: 'Albion Online - Guide des Builds'
+      },
+      timestamp: new Date().toISOString()
+    };
   };
   
-  await interaction.reply({ embeds: [embed] });
+  const generateButtons = (page) => {
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('previous')
+          .setLabel('◀️ Précédent')
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(page === 0),
+        new ButtonBuilder()
+          .setCustomId('next')
+          .setLabel('Suivant ▶️')
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(page === totalPages - 1)
+      );
+    return row;
+  };
+  
+  const embed = generateEmbed(currentPage);
+  const buttons = totalPages > 1 ? generateButtons(currentPage) : null;
+  
+  const response = await interaction.reply({ 
+    embeds: [embed], 
+    components: buttons ? [buttons] : [],
+    fetchReply: true
+  });
+  
+  // Si une seule page, pas besoin d'écouter les boutons
+  if (totalPages <= 1) return;
+  
+  // Collecteur de boutons (60 secondes)
+  const collector = response.createMessageComponentCollector({ time: 60000 });
+  
+  collector.on('collect', async i => {
+    if (i.customId === 'previous') {
+      currentPage--;
+    } else if (i.customId === 'next') {
+      currentPage++;
+    }
+    
+    await i.update({
+      embeds: [generateEmbed(currentPage)],
+      components: [generateButtons(currentPage)]
+    });
+  });
+  
+  collector.on('end', () => {
+    // Désactiver les boutons après expiration
+    interaction.editReply({ components: [] }).catch(() => {});
+  });
 }
