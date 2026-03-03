@@ -357,34 +357,31 @@ export const compositions = {
   pvp_5v5: {
     name: 'Composition PvP 5v5',
     size: 5,
-    template: [
-      { role: roles.TANK, count: 1 },
-      { role: roles.MELEE_DPS, count: 1 },
-      { role: roles.RANGED_DPS, count: 2 },
-      { role: roles.HEALER, count: 1 }
+    preset: [
+      { name: 'Masse Incube', type: 'Tank', role: 'Frontline/CC', gear: 'Mandebrume + Capuche Assassin + Armure Gardien + Sandales Culte + Bridgewatch + Omelette T7' },
+      { name: 'Claymore', type: 'Melee DPS', role: 'Damage/Burst', gear: 'Casque Soldat + Armure Chasseur + Bottes Soldat + Ragout T8' },
+      { name: 'Bâton Ardent', type: 'Ranged DPS', role: 'AoE/Burst', gear: 'Capuche Assassin + Robe Druide + Sandales Royales + Caerleon + Ragout T8' },
+      { name: 'Arc Long', type: 'Ranged DPS', role: 'Range/Poke', gear: 'Capuche Traqueur + Veste Assassin + Bottes Soldat + Ragout T8' },
+      { name: 'Bâton Déchu', type: 'Healer', role: 'Main Healer', gear: 'Capuchon Druide + Robe Royale + Chaussures Cuir + Lymhurst + Omelette T7' }
     ]
   },
   
   dungeon_static: {
     name: 'Donjon Statique (5 joueurs)',
     size: 5,
-    template: [
-      { role: roles.TANK, count: 1 },
-      { role: roles.MELEE_DPS, count: 1 },
-      { role: roles.RANGED_DPS, count: 2 },
-      { role: roles.HEALER, count: 1 }
+    preset: [
+      { name: 'Masse Incube', type: 'Tank', role: 'Frontline/CC', gear: 'Mandebrume + Casque Gardien + Armure Gardien + Bottes Soldat + Soupe T7' },
+      { name: 'Claymore', type: 'Melee DPS', role: 'Sustained/Burst', gear: 'Casque Soldat + Armure Chasseur + Bottes Soldat + Ragout T8' },
+      { name: 'Bâton Ardent', type: 'Ranged DPS', role: 'AoE/Clear', gear: 'Capuche Mage + Robe Druide + Sandales Mage + Ragout T8' },
+      { name: 'Arc Long', type: 'Ranged DPS', role: 'Damage/Boss', gear: 'Capuche Chasseur + Veste Chasseur + Bottes Chasseur + Ragout T8' },
+      { name: 'Bâton Sacré', type: 'Healer', role: 'Main Healer', gear: 'Capuche Mage + Robe Mage + Sandales Mage + Soupe T7' }
     ]
   },
   
   avalonian_raid: {
-    name: 'Raid Avalonian (10 joueurs)',
-    size: 10,
-    template: [
-      { role: roles.TANK, count: 2 },
-      { role: roles.MELEE_DPS, count: 2 },
-      { role: roles.RANGED_DPS, count: 4 },
-      { role: roles.HEALER, count: 2 }
-    ]
+    name: 'Raid Avalonian',
+    size: 0,
+    description: 'Utilise /compo type:Raid Avalonian nombre:X pour générer un raid avec X joueurs'
   },
   
   clap_pvp: {
@@ -422,11 +419,27 @@ export const compositions = {
   zvz: {
     name: 'ZvZ (20 joueurs)',
     size: 20,
-    template: [
-      { role: roles.TANK, count: 4 },
-      { role: roles.MELEE_DPS, count: 4 },
-      { role: roles.RANGED_DPS, count: 8 },
-      { role: roles.HEALER, count: 4 }
+    preset: [
+      { name: 'Marteau-Croissant', type: 'Tank', role: 'Frontline/CC', gear: 'Tourmenteur + Judicateur + Armure Royale + Bottes Royales + Fort Sterling + Omelette T8' },
+      { name: 'Marteau-Croissant', type: 'Tank', role: 'Frontline/CC', gear: 'Tourmenteur + Judicateur + Armure Royale + Bottes Royales + Fort Sterling + Omelette T8' },
+      { name: 'Marteau-Croissant', type: 'Tank', role: 'Frontline/CC', gear: 'Tourmenteur + Judicateur + Armure Royale + Bottes Royales + Fort Sterling + Omelette T8' },
+      { name: 'Marteau-Croissant', type: 'Tank', role: 'Frontline/CC', gear: 'Tourmenteur + Judicateur + Armure Royale + Bottes Royales + Fort Sterling + Omelette T8' },
+      { name: 'Hache de Porteur', type: 'Melee DPS', role: 'Damage/AoE', gear: 'Judicateur + Armure Royale + Bottes Royales + Fort Sterling + Ragout T8' },
+      { name: 'Hache de Porteur', type: 'Melee DPS', role: 'Damage/AoE', gear: 'Judicateur + Armure Royale + Bottes Royales + Fort Sterling + Ragout T8' },
+      { name: 'Fauchard', type: 'Melee DPS', role: 'Execute/Damage', gear: 'Judicateur + Armure Chasseur + Bottes Royales + Martlock + Ragout T8' },
+      { name: 'Fauchard', type: 'Melee DPS', role: 'Execute/Damage', gear: 'Judicateur + Armure Chasseur + Bottes Royales + Martlock + Ragout T8' },
+      { name: 'Bâton Ardent', type: 'Ranged DPS', role: 'AoE/Burst', gear: 'Capuche Assassin + Robe Druide + Sandales Royales + Caerleon + Ragout T8' },
+      { name: 'Bâton Ardent', type: 'Ranged DPS', role: 'AoE/Burst', gear: 'Capuche Assassin + Robe Druide + Sandales Royales + Caerleon + Ragout T8' },
+      { name: 'Bâton Ardent', type: 'Ranged DPS', role: 'AoE/Burst', gear: 'Capuche Assassin + Robe Druide + Sandales Royales + Caerleon + Ragout T8' },
+      { name: 'Bâton Ardent', type: 'Ranged DPS', role: 'AoE/Burst', gear: 'Capuche Assassin + Robe Druide + Sandales Royales + Caerleon + Ragout T8' },
+      { name: 'Arc Long', type: 'Ranged DPS', role: 'Poke/Damage', gear: 'Capuche Traqueur + Veste Assassin + Bottes Royales + Ragout T8' },
+      { name: 'Arc Long', type: 'Ranged DPS', role: 'Poke/Damage', gear: 'Capuche Traqueur + Veste Assassin + Bottes Royales + Ragout T8' },
+      { name: 'Arc Long', type: 'Ranged DPS', role: 'Poke/Damage', gear: 'Capuche Traqueur + Veste Assassin + Bottes Royales + Ragout T8' },
+      { name: 'Arc Long', type: 'Ranged DPS', role: 'Poke/Damage', gear: 'Capuche Traqueur + Veste Assassin + Bottes Royales + Ragout T8' },
+      { name: 'Bâton Sacré', type: 'Healer', role: 'Main Healer', gear: 'Capuche Mage + Robe Mage + Sandales Mage + Lymhurst + Omelette T7' },
+      { name: 'Bâton Sacré', type: 'Healer', role: 'Main Healer', gear: 'Capuche Mage + Robe Mage + Sandales Mage + Lymhurst + Omelette T7' },
+      { name: 'Bâton de Nature', type: 'Healer', role: 'AoE Healer', gear: 'Capuche Druide + Robe Druide + Sandales Druide + Lymhurst + Omelette T7' },
+      { name: 'Bâton de Nature', type: 'Healer', role: 'AoE Healer', gear: 'Capuche Druide + Robe Druide + Sandales Druide + Lymhurst + Omelette T7' }
     ]
   },
   

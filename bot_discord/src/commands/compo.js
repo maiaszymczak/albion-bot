@@ -12,7 +12,7 @@ export const data = new SlashCommandBuilder()
       .addChoices(
         { name: 'PvP 5v5', value: 'pvp_5v5' },
         { name: 'Donjon Statique (5 joueurs)', value: 'dungeon_static' },
-        { name: 'Raid Avalonian (10 joueurs)', value: 'avalonian_raid' },
+        { name: 'Raid Avalonian', value: 'avalonian_raid' },
         { name: 'CLAP PvP (8 joueurs)', value: 'clap_pvp' },
         { name: 'Brawl PvP (10 joueurs)', value: 'brawl_pvp' },
         { name: 'ZvZ (20 joueurs)', value: 'zvz' },
@@ -22,14 +22,14 @@ export const data = new SlashCommandBuilder()
   )
   .addIntegerOption(option =>
     option.setName('nombre')
-      .setDescription('Nombre total de joueurs (pour composition personnalisée)')
+      .setDescription('Nombre de joueurs (pour Raid Avalonian ou Personnalisé)')
       .setMinValue(1)
       .setMaxValue(50)
       .setRequired(false)
   )
   .addStringOption(option =>
     option.setName('style')
-      .setDescription('Style de composition personnalisée')
+      .setDescription('Style de composition (pour Personnalisé uniquement)')
       .setRequired(false)
       .addChoices(
         { name: 'Équilibrée (par défaut)', value: 'balanced' },
@@ -43,6 +43,7 @@ export async function execute(interaction) {
   const customSize = interaction.options.getInteger('nombre');
   const style = interaction.options.getString('style') || 'balanced';
   
+  // Composition personnalisée avec nombre ET style
   if (compType === 'custom') {
     if (!customSize) {
       await interaction.reply('❌ Vous devez spécifier le nombre de joueurs pour une composition personnalisée !');
@@ -57,6 +58,23 @@ export async function execute(interaction) {
     };
     const customTemplate = {
       name: `Composition Personnalisée ${styleNames[style]} (${customSize} joueurs)`,
+      size: customSize
+    };
+    const embed = formatCompositionEmbed(customTemplate, composition);
+    await interaction.reply({ embeds: [embed] });
+    return;
+  }
+  
+  // Raid Avalonian avec nombre personnalisé (toujours équilibré car PvE)
+  if (compType === 'avalonian_raid') {
+    if (!customSize) {
+      await interaction.reply('❌ Vous devez spécifier le nombre de joueurs pour un raid Avalonian !');
+      return;
+    }
+    
+    const composition = generateCustomComposition(customSize, 'balanced');
+    const customTemplate = {
+      name: `Raid Avalonian (${customSize} joueurs)`,
       size: customSize
     };
     const embed = formatCompositionEmbed(customTemplate, composition);
