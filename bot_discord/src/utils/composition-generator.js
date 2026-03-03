@@ -159,11 +159,23 @@ export function formatCompositionEmbed(compType, composition) {
     
     // Détermine l'icône du rôle
     let roleIcon = '⚔️';
-    if (member.role && member.role.includes('Tank')) roleIcon = roleIcons.Tank;
-    else if (member.role && member.role.includes('Heal')) roleIcon = roleIcons.Healer;
-    else if (member.role && member.role.includes('Scout')) roleIcon = roleIcons.Scout;
-    else if (member.role && member.role.includes('Support')) roleIcon = roleIcons.Support;
-    else roleIcon = roleIcons.DPS;
+    let roleType = 'Joueur';
+    if (member.role && member.role.includes('Tank')) {
+      roleIcon = roleIcons.Tank;
+      roleType = 'Tank';
+    } else if (member.role && member.role.includes('Heal')) {
+      roleIcon = roleIcons.Healer;
+      roleType = 'Healer';
+    } else if (member.role && member.role.includes('Scout')) {
+      roleIcon = roleIcons.Scout;
+      roleType = 'Scout';
+    } else if (member.role && member.role.includes('Support')) {
+      roleIcon = roleIcons.Support;
+      roleType = 'Support';
+    } else {
+      roleIcon = roleIcons.DPS;
+      roleType = 'DPS';
+    }
     
     let value = `${roleIcon} **${member.name}**\n📋 Rôle: ${member.role}`;
     
@@ -173,7 +185,7 @@ export function formatCompositionEmbed(compType, composition) {
     }
     
     return {
-      name: `${position}. ${member.type}`,
+      name: `${position}. ${roleType}`,
       value: value,
       inline: false
     };
