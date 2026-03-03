@@ -3,11 +3,37 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
+import express from 'express';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Création du serveur HTTP pour Render
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    bot: 'Albion PVP/PVE Bot',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    discord: client.isReady() ? 'connected' : 'disconnected',
+    guilds: client.guilds?.cache.size || 0
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`🌐 Serveur HTTP démarré sur le port ${PORT}`);
+});
 
 // Création du client Discord
 const client = new Client({

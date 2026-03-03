@@ -47,6 +47,7 @@
    DISCORD_TOKEN=votre_token_discord
    CLIENT_ID=votre_client_id
    GUILD_ID=votre_guild_id_optionnel
+   PORT=3000
    ```
 
    **Comment obtenir ces informations :**
@@ -55,6 +56,7 @@
    - **DISCORD_TOKEN** : Onglet "Bot" → Reset Token
    - **CLIENT_ID** : Onglet "General Information" → Application ID
    - **GUILD_ID** (optionnel) : Activez le mode développeur dans Discord → Clic droit sur votre serveur → Copier l'ID
+   - **PORT** : Port pour le serveur HTTP (3000 par défaut, Render le définira automatiquement)
 
 4. **Déployer les commandes slash**
    ```bash
@@ -70,6 +72,16 @@
    ```bash
    npm run dev
    ```
+
+## 🌐 Déploiement sur Render
+
+Le bot inclut un serveur HTTP pour rester actif sur Render (ou autres plateformes cloud).
+
+**Endpoints disponibles :**
+- `GET /` - Statut du bot et uptime
+- `GET /health` - Health check (état de connexion Discord)
+
+Le bot démarre automatiquement le serveur HTTP sur le port défini par `process.env.PORT` (fourni par Render).
 
 ## 🎯 Utilisation
 
