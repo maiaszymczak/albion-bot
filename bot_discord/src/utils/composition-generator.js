@@ -1,4 +1,4 @@
-import { weapons, roles } from '../data/albion-data.js';
+import { weapons, roles, roleIcons, tierColors } from '../data/albion-data.js';
 
 /**
  * Génère une composition personnalisée basée sur un nombre de joueurs
@@ -74,9 +74,28 @@ export function generateComposition(template) {
  * Formate une composition en embed Discord
  */
 export function formatCompositionEmbed(compType, composition) {
+  // Détermine l'icône et la couleur selon le type de composition
+  const getCompositionColor = (name) => {
+    if (name.includes('PvP') || name.includes('CLAP') || name.includes('Brawl') || name.includes('ZvZ')) {
+      return 0xe74c3c; // Rouge pour PvP
+    } else if (name.includes('Donjon') || name.includes('Raid')) {
+      return 0x9b59b6; // Violet pour PvE
+    }
+    return 0x00AE86; // Vert par défaut
+  };
+  
   const fields = composition.map((member, index) => {
     const position = member.position || (index + 1);
-    let value = `🗡️ **${member.name}**\n📋 Rôle: ${member.role}`;
+    
+    // Détermine l'icône du rôle
+    let roleIcon = '⚔️';
+    if (member.role && member.role.includes('Tank')) roleIcon = roleIcons.Tank;
+    else if (member.role && member.role.includes('Heal')) roleIcon = roleIcons.Healer;
+    else if (member.role && member.role.includes('Scout')) roleIcon = roleIcons.Scout;
+    else if (member.role && member.role.includes('Support')) roleIcon = roleIcons.Support;
+    else roleIcon = roleIcons.DPS;
+    
+    let value = `${roleIcon} **${member.name}**\n📋 Rôle: ${member.role}`;
     
     // Si le build a un gear prédéfini, l'afficher
     if (member.gear) {
@@ -84,16 +103,16 @@ export function formatCompositionEmbed(compType, composition) {
     }
     
     return {
-      name: `Joueur ${position} - ${member.type}`,
+      name: `${position}. ${member.type}`,
       value: value,
       inline: false
     };
   });
   
   return {
-    color: 0x00AE86,
+    color: getCompositionColor(compType.name),
     title: `⚔️ ${compType.name}`,
-    description: `Composition générée pour ${compType.size} joueur(s)`,
+    description: `Composition générée pour **${compType.size} joueur(s)**`,
     fields: fields,
     footer: {
       text: 'Albion Online - Générateur de Compositions'

@@ -1,222 +1,270 @@
 // Base de données des builds Albion Online
 // Armes organisées par catégorie du Destiny Board
 
+// Codes couleur Discord pour les tiers
+export const tierColors = {
+  Standard: 0x808080,  // Gris
+  Rune: 0x00FF00,      // Vert
+  Soul: 0x0099FF,      // Bleu
+  Relic: 0x9900FF,     // Violet
+  Avalon: 0xFF6600,    // Orange
+  Crystal: 0x00FFFF    // Cyan
+};
+
+// Emojis par catégorie d'arme
+export const weaponIcons = {
+  // Guerrier
+  sword: '⚔️',
+  axe: '🪓',
+  mace: '🔨',
+  hammer: '⚒️',
+  wargloves: '👊',
+  crossbow: '🏹',
+  shield: '🛡️',
+  
+  // Chasseur
+  bow: '🏹',
+  dagger: '🗡️',
+  spear: '🔱',
+  quarterstaff: '🥢',
+  shapeshifter: '🐺',
+  nature: '🌿',
+  torch: '🔥',
+  
+  // Mage
+  fire: '🔥',
+  holy: '✨',
+  arcane: '🔮',
+  frost: '❄️',
+  cursed: '💀',
+  tome: '📖'
+};
+
+// Emojis par rôle
+export const roleIcons = {
+  Tank: '🛡️',
+  DPS: '⚔️',
+  Healer: '💚',
+  Support: '✨',
+  Scout: '👁️'
+};
+
 export const weaponsByTree = {
   // GUERRIER (Warrior)
   sword: [
-    { name: 'Épée Large', tier: 'Standard', hands: 1, role: 'DPS' },
-    { name: 'Claymore', tier: 'Rune', hands: 2, role: 'DPS/Burst' },
-    { name: 'Épées Jumelles', tier: 'Soul', hands: 2, role: 'DPS/Mobility' },
-    { name: 'Lame de Clarent', tier: 'Relic', hands: 2, role: 'DPS/Execute' },
-    { name: 'Épée Taillante', tier: 'Avalon', hands: 1, role: 'DPS/Pierce' },
-    { name: 'Paire de Galatine', tier: 'Avalon', hands: 2, role: 'DPS/Dual' },
-    { name: 'Adoube-Roi', tier: 'Avalon', hands: 2, role: 'DPS/Mobile' },
-    { name: 'Lame Infinie', tier: 'Crystal', hands: 2, role: 'DPS/Unstoppable' }
+    { name: 'Épée Large', tier: 'Standard', hands: 1, role: 'DPS', icon: '⚔️', color: 0x808080 },
+    { name: 'Claymore', tier: 'Rune', hands: 2, role: 'DPS/Burst', icon: '⚔️', color: 0x00FF00 },
+    { name: 'Épées Jumelles', tier: 'Soul', hands: 2, role: 'DPS/Mobility', icon: '⚔️', color: 0x0099FF },
+    { name: 'Lame de Clarent', tier: 'Relic', hands: 2, role: 'DPS/Execute', icon: '⚔️', color: 0x9900FF },
+    { name: 'Épée Taillante', tier: 'Avalon', hands: 1, role: 'DPS/Pierce', icon: '⚔️', color: 0xFF6600 },
+    { name: 'Paire de Galatine', tier: 'Avalon', hands: 2, role: 'DPS/Dual', icon: '⚔️', color: 0xFF6600 },
+    { name: 'Adoube-Roi', tier: 'Avalon', hands: 2, role: 'DPS/Mobile', icon: '⚔️', color: 0xFF6600 },
+    { name: 'Lame Infinie', tier: 'Crystal', hands: 2, role: 'DPS/Unstoppable', icon: '⚔️', color: 0x00FFFF }
   ],
   
   axe: [
-    { name: 'Hache de Bataille', tier: 'Standard', hands: 1, role: 'DPS' },
-    { name: 'Grande Hache', tier: 'Rune', hands: 2, role: 'DPS/Cleave' },
-    { name: 'Hallebarde', tier: 'Soul', hands: 2, role: 'DPS/Range' },
-    { name: 'Sonne-Charnier', tier: 'Relic', hands: 2, role: 'DPS/Execute' },
-    { name: 'Faux Infernale', tier: 'Avalon', hands: 2, role: 'DPS/AoE' },
-    { name: 'Pattes d\'Ours', tier: 'Avalon', hands: 2, role: 'DPS/Bleed' },
-    { name: 'Brise-Royaume', tier: 'Avalon', hands: 2, role: 'DPS/Knockback' },
-    { name: 'Faucheuse de Cristal', tier: 'Crystal', hands: 2, role: 'DPS/Burst' }
+    { name: 'Hache de Bataille', tier: 'Standard', hands: 1, role: 'DPS', icon: '🪓', color: 0x808080 },
+    { name: 'Grande Hache', tier: 'Rune', hands: 2, role: 'DPS/Cleave', icon: '🪓', color: 0x00FF00 },
+    { name: 'Hallebarde', tier: 'Soul', hands: 2, role: 'DPS/Range', icon: '🪓', color: 0x0099FF },
+    { name: 'Sonne-Charnier', tier: 'Relic', hands: 2, role: 'DPS/Execute', icon: '🪓', color: 0x9900FF },
+    { name: 'Faux Infernale', tier: 'Avalon', hands: 2, role: 'DPS/AoE', icon: '🪓', color: 0xFF6600 },
+    { name: 'Pattes d\'Ours', tier: 'Avalon', hands: 2, role: 'DPS/Bleed', icon: '🪓', color: 0xFF6600 },
+    { name: 'Brise-Royaume', tier: 'Avalon', hands: 2, role: 'DPS/Knockback', icon: '🪓', color: 0xFF6600 },
+    { name: 'Faucheuse de Cristal', tier: 'Crystal', hands: 2, role: 'DPS/Burst', icon: '🪓', color: 0x00FFFF }
   ],
   
   mace: [
-    { name: 'Masse', tier: 'Standard', hands: 1, role: 'Tank/CC' },
-    { name: 'Masse Lourde', tier: 'Rune', hands: 1, role: 'Tank/Stun' },
-    { name: 'Étoile du Matin', tier: 'Soul', hands: 1, role: 'Tank/Damage' },
-    { name: 'Masse de Soubassement', tier: 'Relic', hands: 1, role: 'Scout/Vision' },
-    { name: 'Masse Incube', tier: 'Avalon', hands: 1, role: 'Tank/CC' },
-    { name: 'Masse de Camlann', tier: 'Avalon', hands: 1, role: 'Tank/AoE' },
-    { name: 'Garde-Serments', tier: 'Avalon', hands: 2, role: 'Tank/Protection' },
-    { name: 'Monarque Effroyable', tier: 'Crystal', hands: 2, role: 'Tank/Fear' }
+    { name: 'Masse', tier: 'Standard', hands: 1, role: 'Tank/CC', icon: '🔨', color: 0x808080 },
+    { name: 'Masse Lourde', tier: 'Rune', hands: 1, role: 'Tank/Stun', icon: '🔨', color: 0x00FF00 },
+    { name: 'Étoile du Matin', tier: 'Soul', hands: 1, role: 'Tank/Damage', icon: '🔨', color: 0x0099FF },
+    { name: 'Masse de Soubassement', tier: 'Relic', hands: 1, role: 'Scout/Vision', icon: '🔨', color: 0x9900FF },
+    { name: 'Masse Incube', tier: 'Avalon', hands: 1, role: 'Tank/CC', icon: '🔨', color: 0xFF6600 },
+    { name: 'Masse de Camlann', tier: 'Avalon', hands: 1, role: 'Tank/AoE', icon: '🔨', color: 0xFF6600 },
+    { name: 'Garde-Serments', tier: 'Avalon', hands: 2, role: 'Tank/Protection', icon: '🔨', color: 0xFF6600 },
+    { name: 'Monarque Effroyable', tier: 'Crystal', hands: 2, role: 'Tank/Fear', icon: '🔨', color: 0x00FFFF }
   ],
   
   hammer: [
-    { name: 'Marteau', tier: 'Standard', hands: 1, role: 'Tank/CC' },
-    { name: 'Marteau d\'Hast', tier: 'Rune', hands: 2, role: 'Tank/Knockback' },
-    { name: 'Grand Marteau', tier: 'Soul', hands: 2, role: 'Tank/Stun' },
-    { name: 'Tombe-Marteau', tier: 'Relic', hands: 2, role: 'Tank/Slow' },
-    { name: 'Marteaux Forgés', tier: 'Avalon', hands: 2, role: 'Tank/CC' },
-    { name: 'Garde-Bosquet', tier: 'Avalon', hands: 2, role: 'Tank/Root' },
-    { name: 'Main de Justice', tier: 'Avalon', hands: 2, role: 'Tank/Judgment' },
-    { name: 'Marteau Éclair-Vrai', tier: 'Crystal', hands: 2, role: 'Tank/Lightning' }
+    { name: 'Marteau', tier: 'Standard', hands: 1, role: 'Tank/CC', icon: '⚒️', color: 0x808080 },
+    { name: 'Marteau d\'Hast', tier: 'Rune', hands: 2, role: 'Tank/Knockback', icon: '⚒️', color: 0x00FF00 },
+    { name: 'Grand Marteau', tier: 'Soul', hands: 2, role: 'Tank/Stun', icon: '⚒️', color: 0x0099FF },
+    { name: 'Tombe-Marteau', tier: 'Relic', hands: 2, role: 'Tank/Slow', icon: '⚒️', color: 0x9900FF },
+    { name: 'Marteaux Forgés', tier: 'Avalon', hands: 2, role: 'Tank/CC', icon: '⚒️', color: 0xFF6600 },
+    { name: 'Garde-Bosquet', tier: 'Avalon', hands: 2, role: 'Tank/Root', icon: '⚒️', color: 0xFF6600 },
+    { name: 'Main de Justice', tier: 'Avalon', hands: 2, role: 'Tank/Judgment', icon: '⚒️', color: 0xFF6600 },
+    { name: 'Marteau Éclair-Vrai', tier: 'Crystal', hands: 2, role: 'Tank/Lightning', icon: '⚒️', color: 0x00FFFF }
   ],
   
   wargloves: [
-    { name: 'Gants de Bagarre', tier: 'Standard', hands: 2, role: 'DPS/Melee' },
-    { name: 'Brassards de Combat', tier: 'Rune', hands: 2, role: 'DPS/Brawl' },
-    { name: 'Gantelets à Pointes', tier: 'Soul', hands: 2, role: 'DPS/Bleed' },
-    { name: 'Mains Ursines', tier: 'Relic', hands: 2, role: 'DPS/Claw' },
-    { name: 'Mains Infernales', tier: 'Avalon', hands: 2, role: 'DPS/AoE' },
-    { name: 'Ceste Frappe-Corbeau', tier: 'Avalon', hands: 2, role: 'DPS/Chain' },
-    { name: 'Poings d\'Avalon', tier: 'Avalon', hands: 2, role: 'DPS/Magic' },
-    { name: 'Brassards Pulse-Force', tier: 'Crystal', hands: 2, role: 'DPS/Energy' }
+    { name: 'Gants de Bagarre', tier: 'Standard', hands: 2, role: 'DPS/Melee', icon: '👊', color: 0x808080 },
+    { name: 'Brassards de Combat', tier: 'Rune', hands: 2, role: 'DPS/Brawl', icon: '👊', color: 0x00FF00 },
+    { name: 'Gantelets à Pointes', tier: 'Soul', hands: 2, role: 'DPS/Bleed', icon: '👊', color: 0x0099FF },
+    { name: 'Mains Ursines', tier: 'Relic', hands: 2, role: 'DPS/Claw', icon: '👊', color: 0x9900FF },
+    { name: 'Mains Infernales', tier: 'Avalon', hands: 2, role: 'DPS/AoE', icon: '👊', color: 0xFF6600 },
+    { name: 'Ceste Frappe-Corbeau', tier: 'Avalon', hands: 2, role: 'DPS/Chain', icon: '👊', color: 0xFF6600 },
+    { name: 'Poings d\'Avalon', tier: 'Avalon', hands: 2, role: 'DPS/Magic', icon: '👊', color: 0xFF6600 },
+    { name: 'Brassards Pulse-Force', tier: 'Crystal', hands: 2, role: 'DPS/Energy', icon: '👊', color: 0x00FFFF }
   ],
   
   crossbow: [
-    { name: 'Arbalète', tier: 'Standard', hands: 2, role: 'DPS/Ranged' },
-    { name: 'Arbalète Lourde', tier: 'Rune', hands: 2, role: 'DPS/Burst' },
-    { name: 'Arbalète Légère', tier: 'Soul', hands: 2, role: 'DPS/Mobility' },
-    { name: 'Répétitrice Gémissante', tier: 'Relic', hands: 2, role: 'DPS/Rapid' },
-    { name: 'Lance-Carreaux', tier: 'Avalon', hands: 2, role: 'DPS/Multi' },
-    { name: 'Arc de Siège', tier: 'Avalon', hands: 2, role: 'DPS/Siege' },
-    { name: 'Sculpteur d\'Énergie', tier: 'Avalon', hands: 2, role: 'DPS/Laser' },
-    { name: 'Canonnières Lumière-Arc', tier: 'Crystal', hands: 2, role: 'DPS/Beam' }
+    { name: 'Arbalète', tier: 'Standard', hands: 2, role: 'DPS/Ranged', icon: '🏹', color: 0x808080 },
+    { name: 'Arbalète Lourde', tier: 'Rune', hands: 2, role: 'DPS/Burst', icon: '🏹', color: 0x00FF00 },
+    { name: 'Arbalète Légère', tier: 'Soul', hands: 2, role: 'DPS/Mobility', icon: '🏹', color: 0x0099FF },
+    { name: 'Répétitrice Gémissante', tier: 'Relic', hands: 2, role: 'DPS/Rapid', icon: '🏹', color: 0x9900FF },
+    { name: 'Lance-Carreaux', tier: 'Avalon', hands: 2, role: 'DPS/Multi', icon: '🏹', color: 0xFF6600 },
+    { name: 'Arc de Siège', tier: 'Avalon', hands: 2, role: 'DPS/Siege', icon: '🏹', color: 0xFF6600 },
+    { name: 'Sculpteur d\'Énergie', tier: 'Avalon', hands: 2, role: 'DPS/Laser', icon: '🏹', color: 0xFF6600 },
+    { name: 'Canonnières Lumière-Arc', tier: 'Crystal', hands: 2, role: 'DPS/Beam', icon: '🏹', color: 0x00FFFF }
   ],
   
   shield: [
-    { name: 'Bouclier', tier: 'Standard', hands: 1, role: 'Tank/Defense' },
-    { name: 'Sarcophage', tier: 'Relic', hands: 1, role: 'Tank/Absorb' },
-    { name: 'Bouclier Caitiff', tier: 'Avalon', hands: 1, role: 'Tank/Reflect' },
-    { name: 'Brise-Face', tier: 'Avalon', hands: 1, role: 'Tank/CC' },
-    { name: 'Égide Astrale', tier: 'Avalon', hands: 1, role: 'Tank/Magic' },
-    { name: 'Garde Incassable', tier: 'Crystal', hands: 1, role: 'Tank/Shield' }
+    { name: 'Bouclier', tier: 'Standard', hands: 1, role: 'Tank/Defense', icon: '🛡️', color: 0x808080 },
+    { name: 'Sarcophage', tier: 'Relic', hands: 1, role: 'Tank/Absorb', icon: '🛡️', color: 0x9900FF },
+    { name: 'Bouclier Caitiff', tier: 'Avalon', hands: 1, role: 'Tank/Reflect', icon: '🛡️', color: 0xFF6600 },
+    { name: 'Brise-Face', tier: 'Avalon', hands: 1, role: 'Tank/CC', icon: '🛡️', color: 0xFF6600 },
+    { name: 'Égide Astrale', tier: 'Avalon', hands: 1, role: 'Tank/Magic', icon: '🛡️', color: 0xFF6600 },
+    { name: 'Garde Incassable', tier: 'Crystal', hands: 1, role: 'Tank/Shield', icon: '🛡️', color: 0x00FFFF }
   ],
   
   // CHASSEUR (Hunter)
   bow: [
-    { name: 'Arc', tier: 'Standard', hands: 2, role: 'DPS/Ranged' },
-    { name: 'Arc de Guerre', tier: 'Rune', hands: 2, role: 'DPS/AoE' },
-    { name: 'Arc Long', tier: 'Soul', hands: 2, role: 'DPS/Range' },
-    { name: 'Arc Chuchoteur', tier: 'Relic', hands: 2, role: 'DPS/Stealth' },
-    { name: 'Arc Gémissant', tier: 'Avalon', hands: 2, role: 'DPS/CC' },
-    { name: 'Arc de Badon', tier: 'Avalon', hands: 2, role: 'DPS/Pierce' },
-    { name: 'Perce-Brume', tier: 'Avalon', hands: 2, role: 'DPS/Vision' },
-    { name: 'Arc Marche-Ciel', tier: 'Crystal', hands: 2, role: 'DPS/Aerial' }
+    { name: 'Arc', tier: 'Standard', hands: 2, role: 'DPS/Ranged', icon: '🏹', color: 0x808080 },
+    { name: 'Arc de Guerre', tier: 'Rune', hands: 2, role: 'DPS/AoE', icon: '🏹', color: 0x00FF00 },
+    { name: 'Arc Long', tier: 'Soul', hands: 2, role: 'DPS/Range', icon: '🏹', color: 0x0099FF },
+    { name: 'Arc Chuchoteur', tier: 'Relic', hands: 2, role: 'DPS/Stealth', icon: '🏹', color: 0x9900FF },
+    { name: 'Arc Gémissant', tier: 'Avalon', hands: 2, role: 'DPS/CC', icon: '🏹', color: 0xFF6600 },
+    { name: 'Arc de Badon', tier: 'Avalon', hands: 2, role: 'DPS/Pierce', icon: '🏹', color: 0xFF6600 },
+    { name: 'Perce-Brume', tier: 'Avalon', hands: 2, role: 'DPS/Vision', icon: '🏹', color: 0xFF6600 },
+    { name: 'Arc Marche-Ciel', tier: 'Crystal', hands: 2, role: 'DPS/Aerial', icon: '🏹', color: 0x00FFFF }
   ],
   
   dagger: [
-    { name: 'Dague', tier: 'Standard', hands: 1, role: 'DPS/Assassin' },
-    { name: 'Paire de Dagues', tier: 'Rune', hands: 2, role: 'DPS/Dual' },
-    { name: 'Griffes', tier: 'Soul', hands: 2, role: 'DPS/Bleed' },
-    { name: 'Saigneur', tier: 'Relic', hands: 1, role: 'Execute/Burst' },
-    { name: 'Démoniaque', tier: 'Avalon', hands: 1, role: 'DPS/Dash' },
-    { name: 'Donne-Morts', tier: 'Avalon', hands: 2, role: 'DPS/Execute' },
-    { name: 'Fureur Bridée', tier: 'Avalon', hands: 2, role: 'DPS/Charge' },
-    { name: 'Pourfendeurs Jumeaux', tier: 'Crystal', hands: 2, role: 'DPS/Twin' }
+    { name: 'Dague', tier: 'Standard', hands: 1, role: 'DPS/Assassin', icon: '🗡️', color: 0x808080 },
+    { name: 'Paire de Dagues', tier: 'Rune', hands: 2, role: 'DPS/Dual', icon: '🗡️', color: 0x00FF00 },
+    { name: 'Griffes', tier: 'Soul', hands: 2, role: 'DPS/Bleed', icon: '🗡️', color: 0x0099FF },
+    { name: 'Saigneur', tier: 'Relic', hands: 1, role: 'Execute/Burst', icon: '🗡️', color: 0x9900FF },
+    { name: 'Démoniaque', tier: 'Avalon', hands: 1, role: 'DPS/Dash', icon: '🗡️', color: 0xFF6600 },
+    { name: 'Donne-Morts', tier: 'Avalon', hands: 2, role: 'DPS/Execute', icon: '🗡️', color: 0xFF6600 },
+    { name: 'Fureur Bridée', tier: 'Avalon', hands: 2, role: 'DPS/Charge', icon: '🗡️', color: 0xFF6600 },
+    { name: 'Pourfendeurs Jumeaux', tier: 'Crystal', hands: 2, role: 'DPS/Twin', icon: '🗡️', color: 0x00FFFF }
   ],
   
   spear: [
-    { name: 'Lance', tier: 'Standard', hands: 2, role: 'DPS/Poke' },
-    { name: 'Pique', tier: 'Rune', hands: 2, role: 'DPS/Range' },
-    { name: 'Glaive', tier: 'Soul', hands: 2, role: 'DPS/Cleave' },
-    { name: 'Lance du Héron', tier: 'Relic', hands: 2, role: 'DPS/Mobility' },
-    { name: 'Chasse-Esprit', tier: 'Avalon', hands: 2, role: 'DPS/Hunt' },
-    { name: 'Lance Trinité', tier: 'Avalon', hands: 2, role: 'DPS/Triple' },
-    { name: 'Aube-Levante', tier: 'Avalon', hands: 2, role: 'DPS/Light' },
-    { name: 'Glaive de Faille', tier: 'Crystal', hands: 2, role: 'DPS/Void' }
+    { name: 'Lance', tier: 'Standard', hands: 2, role: 'DPS/Poke', icon: '🔱', color: 0x808080 },
+    { name: 'Pique', tier: 'Rune', hands: 2, role: 'DPS/Range', icon: '🔱', color: 0x00FF00 },
+    { name: 'Glaive', tier: 'Soul', hands: 2, role: 'DPS/Cleave', icon: '🔱', color: 0x0099FF },
+    { name: 'Lance du Héron', tier: 'Relic', hands: 2, role: 'DPS/Mobility', icon: '🔱', color: 0x9900FF },
+    { name: 'Chasse-Esprit', tier: 'Avalon', hands: 2, role: 'DPS/Hunt', icon: '🔱', color: 0xFF6600 },
+    { name: 'Lance Trinité', tier: 'Avalon', hands: 2, role: 'DPS/Triple', icon: '🔱', color: 0xFF6600 },
+    { name: 'Aube-Levante', tier: 'Avalon', hands: 2, role: 'DPS/Light', icon: '🔱', color: 0xFF6600 },
+    { name: 'Glaive de Faille', tier: 'Crystal', hands: 2, role: 'DPS/Void', icon: '🔱', color: 0x00FFFF }
   ],
   
   quarterstaff: [
-    { name: 'Bâton', tier: 'Standard', hands: 2, role: 'DPS/CC' },
-    { name: 'Bâton Renforcé', tier: 'Rune', hands: 2, role: 'DPS/Defense' },
-    { name: 'Bâton Double Lame', tier: 'Soul', hands: 2, role: 'DPS/Spin' },
-    { name: 'Bâton du Moine Noir', tier: 'Relic', hands: 2, role: 'DPS/Martial' },
-    { name: 'Faux d\'Âme', tier: 'Avalon', hands: 2, role: 'Execute/Reset' },
-    { name: 'Bâton d\'Équilibre', tier: 'Avalon', hands: 2, role: 'DPS/Balance' },
-    { name: 'Quête-Graal', tier: 'Avalon', hands: 2, role: 'DPS/Holy' },
-    { name: 'Lame Jumelle Fantôme', tier: 'Crystal', hands: 2, role: 'DPS/Ghost' }
+    { name: 'Bâton', tier: 'Standard', hands: 2, role: 'DPS/CC', icon: '🥢', color: 0x808080 },
+    { name: 'Bâton Renforcé', tier: 'Rune', hands: 2, role: 'DPS/Defense', icon: '🥢', color: 0x00FF00 },
+    { name: 'Bâton Double Lame', tier: 'Soul', hands: 2, role: 'DPS/Spin', icon: '🥢', color: 0x0099FF },
+    { name: 'Bâton du Moine Noir', tier: 'Relic', hands: 2, role: 'DPS/Martial', icon: '🥢', color: 0x9900FF },
+    { name: 'Faux d\'Âme', tier: 'Avalon', hands: 2, role: 'Execute/Reset', icon: '🥢', color: 0xFF6600 },
+    { name: 'Bâton d\'Équilibre', tier: 'Avalon', hands: 2, role: 'DPS/Balance', icon: '🥢', color: 0xFF6600 },
+    { name: 'Quête-Graal', tier: 'Avalon', hands: 2, role: 'DPS/Holy', icon: '🥢', color: 0xFF6600 },
+    { name: 'Lame Jumelle Fantôme', tier: 'Crystal', hands: 2, role: 'DPS/Ghost', icon: '🥢', color: 0x00FFFF }
   ],
   
   shapeshifter: [
-    { name: 'Bâton Rôdeur', tier: 'Standard', hands: 2, role: 'DPS/Transform' },
-    { name: 'Bâton Enraciné', tier: 'Rune', hands: 2, role: 'DPS/Root' },
-    { name: 'Bâton Primal', tier: 'Soul', hands: 2, role: 'DPS/Beast' },
-    { name: 'Bâton Lune de Sang', tier: 'Relic', hands: 2, role: 'DPS/Feral' },
-    { name: 'Bâton Progéniture', tier: 'Avalon', hands: 2, role: 'DPS/Summon' },
-    { name: 'Bâton Rune-Terre', tier: 'Avalon', hands: 2, role: 'DPS/Earth' },
-    { name: 'Appelle-Lumière', tier: 'Avalon', hands: 2, role: 'DPS/Light' },
-    { name: 'Bâton Regard-Fixe', tier: 'Crystal', hands: 2, role: 'DPS/Gaze' }
+    { name: 'Bâton Rôdeur', tier: 'Standard', hands: 2, role: 'DPS/Transform', icon: '🐺', color: 0x808080 },
+    { name: 'Bâton Enraciné', tier: 'Rune', hands: 2, role: 'DPS/Root', icon: '🐺', color: 0x00FF00 },
+    { name: 'Bâton Primal', tier: 'Soul', hands: 2, role: 'DPS/Beast', icon: '🐺', color: 0x0099FF },
+    { name: 'Bâton Lune de Sang', tier: 'Relic', hands: 2, role: 'DPS/Feral', icon: '🐺', color: 0x9900FF },
+    { name: 'Bâton Progéniture', tier: 'Avalon', hands: 2, role: 'DPS/Summon', icon: '🐺', color: 0xFF6600 },
+    { name: 'Bâton Rune-Terre', tier: 'Avalon', hands: 2, role: 'DPS/Earth', icon: '🐺', color: 0xFF6600 },
+    { name: 'Appelle-Lumière', tier: 'Avalon', hands: 2, role: 'DPS/Light', icon: '🐺', color: 0xFF6600 },
+    { name: 'Bâton Regard-Fixe', tier: 'Crystal', hands: 2, role: 'DPS/Gaze', icon: '🐺', color: 0x00FFFF }
   ],
   
   nature: [
-    { name: 'Bâton de Nature', tier: 'Standard', hands: 1, role: 'Healer/HoT' },
-    { name: 'Grand Bâton de Nature', tier: 'Rune', hands: 2, role: 'Healer/Group' },
-    { name: 'Bâton Sauvage', tier: 'Soul', hands: 1, role: 'Healer/Mobile' },
-    { name: 'Bâton Druidique', tier: 'Relic', hands: 1, role: 'Healer/Druid' },
-    { name: 'Bâton Fléau', tier: 'Avalon', hands: 1, role: 'Healer/DoT' },
-    { name: 'Bâton Déchaîné', tier: 'Avalon', hands: 2, role: 'Healer/Power' },
-    { name: 'Bâton Racine-Fer', tier: 'Avalon', hands: 1, role: 'Healer/Tank' },
-    { name: 'Bâton Écorce-Forge', tier: 'Crystal', hands: 2, role: 'Healer/Shield' }
+    { name: 'Bâton de Nature', tier: 'Standard', hands: 1, role: 'Healer/HoT', icon: '🌿', color: 0x808080 },
+    { name: 'Grand Bâton de Nature', tier: 'Rune', hands: 2, role: 'Healer/Group', icon: '🌿', color: 0x00FF00 },
+    { name: 'Bâton Sauvage', tier: 'Soul', hands: 1, role: 'Healer/Mobile', icon: '🌿', color: 0x0099FF },
+    { name: 'Bâton Druidique', tier: 'Relic', hands: 1, role: 'Healer/Druid', icon: '🌿', color: 0x9900FF },
+    { name: 'Bâton Fléau', tier: 'Avalon', hands: 1, role: 'Healer/DoT', icon: '🌿', color: 0xFF6600 },
+    { name: 'Bâton Déchaîné', tier: 'Avalon', hands: 2, role: 'Healer/Power', icon: '🌿', color: 0xFF6600 },
+    { name: 'Bâton Racine-Fer', tier: 'Avalon', hands: 1, role: 'Healer/Tank', icon: '🌿', color: 0xFF6600 },
+    { name: 'Bâton Écorce-Forge', tier: 'Crystal', hands: 2, role: 'Healer/Shield', icon: '🌿', color: 0x00FFFF }
   ],
   
   torch: [
-    { name: 'Torche', tier: 'Standard', hands: 1, role: 'Support/Utility' },
-    { name: 'Appeleur de Brume', tier: 'Relic', hands: 1, role: 'Support/Stealth' },
-    { name: 'Canne Grimaçante', tier: 'Avalon', hands: 1, role: 'Support/CC' },
-    { name: 'Bougie Crypte', tier: 'Avalon', hands: 1, role: 'Support/Dark' },
-    { name: 'Sceptre Sacré', tier: 'Avalon', hands: 1, role: 'Support/Holy' },
-    { name: 'Torche Flamme-Bleue', tier: 'Crystal', hands: 1, role: 'Support/Fire' }
+    { name: 'Torche', tier: 'Standard', hands: 1, role: 'Support/Utility', icon: '🔥', color: 0x808080 },
+    { name: 'Appeleur de Brume', tier: 'Relic', hands: 1, role: 'Support/Stealth', icon: '🔥', color: 0x9900FF },
+    { name: 'Canne Grimaçante', tier: 'Avalon', hands: 1, role: 'Support/CC', icon: '🔥', color: 0xFF6600 },
+    { name: 'Bougie Crypte', tier: 'Avalon', hands: 1, role: 'Support/Dark', icon: '🔥', color: 0xFF6600 },
+    { name: 'Sceptre Sacré', tier: 'Avalon', hands: 1, role: 'Support/Holy', icon: '🔥', color: 0xFF6600 },
+    { name: 'Torche Flamme-Bleue', tier: 'Crystal', hands: 1, role: 'Support/Fire', icon: '🔥', color: 0x00FFFF }
   ],
   
   // MAGE (Mage)
   fire: [
-    { name: 'Bâton de Feu', tier: 'Standard', hands: 1, role: 'DPS/Fire' },
-    { name: 'Grand Bâton de Feu', tier: 'Rune', hands: 2, role: 'DPS/AoE' },
-    { name: 'Bâton Infernal', tier: 'Soul', hands: 1, role: 'DPS/DoT' },
-    { name: 'Bâton Feu Sauvage', tier: 'Relic', hands: 1, role: 'DPS/Wild' },
-    { name: 'Bâton Soufre', tier: 'Avalon', hands: 1, role: 'DPS/Burn' },
-    { name: 'Bâton Ardent', tier: 'Avalon', hands: 2, role: 'DPS/Burst' },
-    { name: 'Aube-Chant', tier: 'Avalon', hands: 2, role: 'DPS/Song' },
-    { name: 'Bâton Marche-Flamme', tier: 'Crystal', hands: 2, role: 'DPS/Walk' }
+    { name: 'Bâton de Feu', tier: 'Standard', hands: 1, role: 'DPS/Fire', icon: '🔥', color: 0x808080 },
+    { name: 'Grand Bâton de Feu', tier: 'Rune', hands: 2, role: 'DPS/AoE', icon: '🔥', color: 0x00FF00 },
+    { name: 'Bâton Infernal', tier: 'Soul', hands: 1, role: 'DPS/DoT', icon: '🔥', color: 0x0099FF },
+    { name: 'Bâton Feu Sauvage', tier: 'Relic', hands: 1, role: 'DPS/Wild', icon: '🔥', color: 0x9900FF },
+    { name: 'Bâton Soufre', tier: 'Avalon', hands: 1, role: 'DPS/Burn', icon: '🔥', color: 0xFF6600 },
+    { name: 'Bâton Ardent', tier: 'Avalon', hands: 2, role: 'DPS/Burst', icon: '🔥', color: 0xFF6600 },
+    { name: 'Aube-Chant', tier: 'Avalon', hands: 2, role: 'DPS/Song', icon: '🔥', color: 0xFF6600 },
+    { name: 'Bâton Marche-Flamme', tier: 'Crystal', hands: 2, role: 'DPS/Walk', icon: '🔥', color: 0x00FFFF }
   ],
   
   holy: [
-    { name: 'Bâton Sacré', tier: 'Standard', hands: 1, role: 'Healer/Single' },
-    { name: 'Grand Bâton Sacré', tier: 'Rune', hands: 2, role: 'Healer/AoE' },
-    { name: 'Bâton Divin', tier: 'Soul', hands: 1, role: 'Healer/Burst' },
-    { name: 'Bâton Touche-Vie', tier: 'Relic', hands: 1, role: 'Healer/Touch' },
-    { name: 'Bâton Déchu', tier: 'Avalon', hands: 1, role: 'Healer/Party' },
-    { name: 'Bâton Rédemption', tier: 'Avalon', hands: 2, role: 'Healer/Revive' },
-    { name: 'Chute-Bénie', tier: 'Avalon', hands: 2, role: 'Healer/Rain' },
-    { name: 'Bâton Exalté', tier: 'Crystal', hands: 2, role: 'Healer/Power' }
+    { name: 'Bâton Sacré', tier: 'Standard', hands: 1, role: 'Healer/Single', icon: '✨', color: 0x808080 },
+    { name: 'Grand Bâton Sacré', tier: 'Rune', hands: 2, role: 'Healer/AoE', icon: '✨', color: 0x00FF00 },
+    { name: 'Bâton Divin', tier: 'Soul', hands: 1, role: 'Healer/Burst', icon: '✨', color: 0x0099FF },
+    { name: 'Bâton Touche-Vie', tier: 'Relic', hands: 1, role: 'Healer/Touch', icon: '✨', color: 0x9900FF },
+    { name: 'Bâton Déchu', tier: 'Avalon', hands: 1, role: 'Healer/Party', icon: '✨', color: 0xFF6600 },
+    { name: 'Bâton Rédemption', tier: 'Avalon', hands: 2, role: 'Healer/Revive', icon: '✨', color: 0xFF6600 },
+    { name: 'Chute-Bénie', tier: 'Avalon', hands: 2, role: 'Healer/Rain', icon: '✨', color: 0xFF6600 },
+    { name: 'Bâton Exalté', tier: 'Crystal', hands: 2, role: 'Healer/Power', icon: '✨', color: 0x00FFFF }
   ],
   
   arcane: [
-    { name: 'Bâton Arcane', tier: 'Standard', hands: 1, role: 'DPS/Magic' },
-    { name: 'Grand Bâton Arcane', tier: 'Rune', hands: 2, role: 'DPS/Beam' },
-    { name: 'Bâton Énigmatique', tier: 'Soul', hands: 1, role: 'DPS/Mystery' },
-    { name: 'Bâton Sorcellerie', tier: 'Relic', hands: 1, role: 'DPS/Witch' },
-    { name: 'Bâton Occulte', tier: 'Avalon', hands: 1, role: 'DPS/Dark' },
-    { name: 'Locus Malveillant', tier: 'Avalon', hands: 2, role: 'DPS/Curse' },
-    { name: 'Chant du Soir', tier: 'Avalon', hands: 2, role: 'DPS/Night' },
-    { name: 'Bâton Astral', tier: 'Crystal', hands: 2, role: 'DPS/Stars' }
+    { name: 'Bâton Arcane', tier: 'Standard', hands: 1, role: 'DPS/Magic', icon: '🔮', color: 0x808080 },
+    { name: 'Grand Bâton Arcane', tier: 'Rune', hands: 2, role: 'DPS/Beam', icon: '🔮', color: 0x00FF00 },
+    { name: 'Bâton Énigmatique', tier: 'Soul', hands: 1, role: 'DPS/Mystery', icon: '🔮', color: 0x0099FF },
+    { name: 'Bâton Sorcellerie', tier: 'Relic', hands: 1, role: 'DPS/Witch', icon: '🔮', color: 0x9900FF },
+    { name: 'Bâton Occulte', tier: 'Avalon', hands: 1, role: 'DPS/Dark', icon: '🔮', color: 0xFF6600 },
+    { name: 'Locus Malveillant', tier: 'Avalon', hands: 2, role: 'DPS/Curse', icon: '🔮', color: 0xFF6600 },
+    { name: 'Chant du Soir', tier: 'Avalon', hands: 2, role: 'DPS/Night', icon: '🔮', color: 0xFF6600 },
+    { name: 'Bâton Astral', tier: 'Crystal', hands: 2, role: 'DPS/Stars', icon: '🔮', color: 0x00FFFF }
   ],
   
   frost: [
-    { name: 'Bâton de Givre', tier: 'Standard', hands: 1, role: 'DPS/Slow' },
-    { name: 'Grand Bâton de Givre', tier: 'Rune', hands: 2, role: 'DPS/Freeze' },
-    { name: 'Bâton Glacial', tier: 'Soul', hands: 1, role: 'DPS/Ice' },
-    { name: 'Bâton Givre-Blanc', tier: 'Relic', hands: 1, role: 'DPS/Chill' },
-    { name: 'Bâton Glaçon', tier: 'Avalon', hands: 1, role: 'DPS/Spike' },
-    { name: 'Prisme Pergélisol', tier: 'Avalon', hands: 2, role: 'DPS/Prism' },
-    { name: 'Hurle-Givre', tier: 'Avalon', hands: 2, role: 'DPS/CC' },
-    { name: 'Bâton Arctique', tier: 'Crystal', hands: 2, role: 'DPS/Arctic' }
+    { name: 'Bâton de Givre', tier: 'Standard', hands: 1, role: 'DPS/Slow', icon: '❄️', color: 0x808080 },
+    { name: 'Grand Bâton de Givre', tier: 'Rune', hands: 2, role: 'DPS/Freeze', icon: '❄️', color: 0x00FF00 },
+    { name: 'Bâton Glacial', tier: 'Soul', hands: 1, role: 'DPS/Ice', icon: '❄️', color: 0x0099FF },
+    { name: 'Bâton Givre-Blanc', tier: 'Relic', hands: 1, role: 'DPS/Chill', icon: '❄️', color: 0x9900FF },
+    { name: 'Bâton Glaçon', tier: 'Avalon', hands: 1, role: 'DPS/Spike', icon: '❄️', color: 0xFF6600 },
+    { name: 'Prisme Pergélisol', tier: 'Avalon', hands: 2, role: 'DPS/Prism', icon: '❄️', color: 0xFF6600 },
+    { name: 'Hurle-Givre', tier: 'Avalon', hands: 2, role: 'DPS/CC', icon: '❄️', color: 0xFF6600 },
+    { name: 'Bâton Arctique', tier: 'Crystal', hands: 2, role: 'DPS/Arctic', icon: '❄️', color: 0x00FFFF }
   ],
   
   cursed: [
-    { name: 'Bâton Maudit', tier: 'Standard', hands: 1, role: 'DPS/DoT' },
-    { name: 'Grand Bâton Maudit', tier: 'Rune', hands: 2, role: 'DPS/AoE' },
-    { name: 'Bâton Démoniaque', tier: 'Soul', hands: 1, role: 'DPS/Demon' },
-    { name: 'Bâton Malédiction-Vie', tier: 'Relic', hands: 1, role: 'DPS/Drain' },
-    { name: 'Crâne Maudit', tier: 'Avalon', hands: 1, role: 'DPS/Skull' },
-    { name: 'Bâton Damnation', tier: 'Avalon', hands: 2, role: 'DPS/Hell' },
-    { name: 'Appelle-Ombre', tier: 'Avalon', hands: 2, role: 'DPS/Shadow' },
-    { name: 'Bâton Appelle-Putréfaction', tier: 'Crystal', hands: 2, role: 'DPS/Rot' }
+    { name: 'Bâton Maudit', tier: 'Standard', hands: 1, role: 'DPS/DoT', icon: '💀', color: 0x808080 },
+    { name: 'Grand Bâton Maudit', tier: 'Rune', hands: 2, role: 'DPS/AoE', icon: '💀', color: 0x00FF00 },
+    { name: 'Bâton Démoniaque', tier: 'Soul', hands: 1, role: 'DPS/Demon', icon: '💀', color: 0x0099FF },
+    { name: 'Bâton Malédiction-Vie', tier: 'Relic', hands: 1, role: 'DPS/Drain', icon: '💀', color: 0x9900FF },
+    { name: 'Crâne Maudit', tier: 'Avalon', hands: 1, role: 'DPS/Skull', icon: '💀', color: 0xFF6600 },
+    { name: 'Bâton Damnation', tier: 'Avalon', hands: 2, role: 'DPS/Hell', icon: '💀', color: 0xFF6600 },
+    { name: 'Appelle-Ombre', tier: 'Avalon', hands: 2, role: 'DPS/Shadow', icon: '💀', color: 0xFF6600 },
+    { name: 'Bâton Appelle-Putréfaction', tier: 'Crystal', hands: 2, role: 'DPS/Rot', icon: '💀', color: 0x00FFFF }
   ],
   
   tome: [
-    { name: 'Tome de Sorts', tier: 'Standard', hands: 1, role: 'Support/Magic' },
-    { name: 'Œil des Secrets', tier: 'Relic', hands: 1, role: 'Support/Vision' },
-    { name: 'Muisak', tier: 'Avalon', hands: 1, role: 'Support/Debuff' },
-    { name: 'Racine-Pivot', tier: 'Avalon', hands: 1, role: 'Support/Root' },
-    { name: 'Encensoir Céleste', tier: 'Avalon', hands: 1, role: 'Support/Buff' },
-    { name: 'Grimoire Verrou-Temps', tier: 'Crystal', hands: 1, role: 'Support/Time' }
+    { name: 'Tome de Sorts', tier: 'Standard', hands: 1, role: 'Support/Magic', icon: '📖', color: 0x808080 },
+    { name: 'Œil des Secrets', tier: 'Relic', hands: 1, role: 'Support/Vision', icon: '📖', color: 0x9900FF },
+    { name: 'Muisak', tier: 'Avalon', hands: 1, role: 'Support/Debuff', icon: '📖', color: 0xFF6600 },
+    { name: 'Racine-Pivot', tier: 'Avalon', hands: 1, role: 'Support/Root', icon: '📖', color: 0xFF6600 },
+    { name: 'Encensoir Céleste', tier: 'Avalon', hands: 1, role: 'Support/Buff', icon: '📖', color: 0xFF6600 },
+    { name: 'Grimoire Verrou-Temps', tier: 'Crystal', hands: 1, role: 'Support/Time', icon: '📖', color: 0x00FFFF }
   ]
 };
 
