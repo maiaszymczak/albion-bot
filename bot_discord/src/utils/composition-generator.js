@@ -84,6 +84,45 @@ export function formatCompositionEmbed(compType, composition) {
     return 0x00AE86; // Vert par défaut
   };
   
+  // Pour les builds solo (1 joueur), afficher différemment
+  if (compType.size === 1 && composition.length > 1) {
+    const fields = composition.map((build, index) => {
+      const tierEmoji = {
+        'Meta': '🔥',
+        'Viable': '✅',
+        'Situational': '⚠️',
+        'High Skill': '⭐'
+      }[build.tier] || '📌';
+      
+      let value = `${tierEmoji} **${build.tier}**\n`;
+      value += `📋 ${build.role}\n`;
+      if (build.description) {
+        value += `💭 ${build.description}\n`;
+      }
+      if (build.gear) {
+        value += `🎽 ${build.gear}`;
+      }
+      
+      return {
+        name: `${index + 1}. ${build.name}`,
+        value: value,
+        inline: false
+      };
+    });
+    
+    return {
+      color: getCompositionColor(compType.name),
+      title: `⚔️ ${compType.name}`,
+      description: compType.description || `Builds recommandés pour **${compType.size} joueur(s)**`,
+      fields: fields,
+      footer: {
+        text: 'Albion Online - Générateur de Compositions'
+      },
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  // Pour les compositions multi-joueurs
   const fields = composition.map((member, index) => {
     const position = member.position || (index + 1);
     

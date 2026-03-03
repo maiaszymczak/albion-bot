@@ -433,8 +433,72 @@ export const compositions = {
   corrupted_dungeon: {
     name: 'Donjon Corrompu (Solo)',
     size: 1,
-    template: [
-      { role: roles.MELEE_DPS, count: 1 }
+    description: 'Builds recommandés pour le PvP 1v1 en donjon corrompu',
+    preset: [
+      { 
+        name: 'Saigneur', 
+        type: 'Assassin 1v1', 
+        role: 'Execute/Burst', 
+        tier: 'Meta',
+        gear: 'Capuche Assassin + Veste Assassin + Chaussures Soldat + Pâté Anguille T8',
+        description: 'Build assassin burst avec forte mobilité et damage'
+      },
+      { 
+        name: 'Claymore', 
+        type: 'DPS Bruiser', 
+        role: 'Sustained/Burst', 
+        tier: 'Meta',
+        gear: 'Casque Soldat + Armure Chasseur + Bottes Soldat + Pâté T8',
+        description: 'Build équilibré avec bon damage et sustain'
+      },
+      { 
+        name: 'Démoniaque', 
+        type: 'Kite/Mobility', 
+        role: 'High Mobility', 
+        tier: 'Meta',
+        gear: 'Capuche Traqueur + Veste Assassin + Chaussures Assassin + Pâté T8',
+        description: 'Build ultra mobile pour kiter et punish'
+      },
+      { 
+        name: 'Bâton du Moine Noir', 
+        type: 'Bruiser/CC', 
+        role: 'Control/Damage', 
+        tier: 'Viable',
+        gear: 'Capuche Traqueur + Veste Chasseur + Bottes Soldat + Pâté T8',
+        description: 'Build avec CC et bon damage soutenu'
+      },
+      { 
+        name: 'Arc Long', 
+        type: 'Ranged Kite', 
+        role: 'Range/Poke', 
+        tier: 'Viable',
+        gear: 'Capuche Traqueur + Veste Assassin + Bottes Soldat + Pâté T8',
+        description: 'Build ranged pour maintenir la distance'
+      },
+      { 
+        name: 'Bâton Glacial', 
+        type: 'Mage Kite', 
+        role: 'CC/Damage', 
+        tier: 'Viable',
+        gear: 'Capuche Mage + Robe Mage + Sandales Mage + Pâté T8',
+        description: 'Build mage avec slow et burst damage'
+      },
+      { 
+        name: 'Bâton Infernal', 
+        type: 'DoT/Sustain', 
+        role: 'Damage/Heal', 
+        tier: 'Situational',
+        gear: 'Capuche Mage + Robe Mage + Sandales Mage + Pâté T8',
+        description: 'Build DoT avec heal pour long fights'
+      },
+      { 
+        name: 'Faux d\'Âme', 
+        type: 'Reset Fighter', 
+        role: 'Execute/Reset', 
+        tier: 'High Skill',
+        gear: 'Casque Soldat + Veste Assassin + Bottes Soldat + Pâté T8',
+        description: 'Build high-risk high-reward avec reset sur kill'
+      }
     ]
   }
 };
