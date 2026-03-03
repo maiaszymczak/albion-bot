@@ -66,27 +66,33 @@ export async function execute(interaction) {
   // Équipement recommandé par rôle
   let gearSuggestion = '';
   if (role === 'tank') {
-    gearSuggestion = '🎽 **Équipement Tank** : Casque Judicateur/Gardien + Armure Gardien/Royale + Bottes Soldat + Soupe/Omelette T7';
+    gearSuggestion = 'Casque Judicateur/Gardien + Armure Gardien/Royale + Bottes Soldat + Soupe/Omelette T7';
   } else if (role === 'healer') {
-    gearSuggestion = '🎽 **Équipement Healer** : Capuche Mage/Druide + Robe Mage/Druide + Sandales Mage + Omelette T7';
+    gearSuggestion = 'Capuche Mage/Druide + Robe Mage/Druide + Sandales Mage + Omelette T7';
   } else if (role === 'melee_dps') {
-    gearSuggestion = '🎽 **Équipement Melee DPS** : Casque Soldat/Assassin + Armure Chasseur/Assassin + Bottes Soldat + Ragout T8';
+    gearSuggestion = 'Casque Soldat/Assassin + Armure Chasseur/Assassin + Bottes Soldat + Ragout T8';
   } else if (role === 'ranged_dps') {
-    gearSuggestion = '🎽 **Équipement Ranged DPS** : Capuche Traqueur/Assassin + Robe Druide/Veste Assassin + Sandales Royales + Ragout T8';
+    gearSuggestion = 'Capuche Traqueur/Assassin + Robe Druide/Veste Assassin + Sandales Royales + Ragout T8';
   }
   
   const roleIcon = roleIcons.Tank || '⚔️';
-  const buildList = allWeapons
-    .slice(0, 25) // Limite Discord : 25 fields max
-    .map(w => `${w.icon || roleIcon} **${w.name}** (${w.tier}) - ${w.role}`)
-    .join('\n');
+  
+  // Créer des fields pour chaque arme (max 10 pour ne pas surcharger)
+  const fields = allWeapons
+    .slice(0, 10)
+    .map(w => ({
+      name: `${w.icon || roleIcon} ${w.name} (${w.tier})`,
+      value: `📋 ${w.role}\n🎽 ${gearSuggestion}`,
+      inline: false
+    }));
   
   const embed = {
     color: roleColors[role] || 0x0099FF,
     title: `${roleIcon} Builds disponibles - ${roleNames[role]}`,
-    description: buildList + '\n\n' + gearSuggestion,
+    description: `${allWeapons.length} arme(s) disponible(s) pour ce rôle`,
+    fields: fields,
     footer: {
-      text: `Albion Online - ${allWeapons.length} arme(s) disponible(s)`
+      text: 'Albion Online - Guide des Builds'
     },
     timestamp: new Date().toISOString()
   };
