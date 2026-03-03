@@ -173,24 +173,49 @@ export function formatCompositionEmbed(compType, composition) {
   const fields = composition.map((member, index) => {
     const position = member.position || (index + 1);
     
-    // Détermine l'icône du rôle
+    // Détermine l'icône et le type du rôle
+    // Utilise member.type si disponible (pour les presets), sinon analyse member.role
     let roleIcon = '⚔️';
     let roleType = 'Joueur';
-    if (member.role && member.role.includes('Tank')) {
-      roleIcon = roleIcons.Tank;
-      roleType = 'Tank';
-    } else if (member.role && member.role.includes('Heal')) {
-      roleIcon = roleIcons.Healer;
-      roleType = 'Healer';
-    } else if (member.role && member.role.includes('Scout')) {
-      roleIcon = roleIcons.Scout;
-      roleType = 'Scout';
-    } else if (member.role && member.role.includes('Support')) {
-      roleIcon = roleIcons.Support;
-      roleType = 'Support';
-    } else {
-      roleIcon = roleIcons.DPS;
-      roleType = 'DPS';
+    
+    if (member.type) {
+      // Pour les presets avec type défini
+      const memberType = member.type.toLowerCase();
+      if (memberType.includes('tank')) {
+        roleIcon = roleIcons.Tank;
+        roleType = 'Tank';
+      } else if (memberType.includes('heal')) {
+        roleIcon = roleIcons.Healer;
+        roleType = 'Healer';
+      } else if (memberType.includes('scout')) {
+        roleIcon = roleIcons.Scout;
+        roleType = 'Scout';
+      } else if (memberType.includes('support')) {
+        roleIcon = roleIcons.Support;
+        roleType = 'Support';
+      } else {
+        roleIcon = roleIcons.DPS;
+        roleType = 'DPS';
+      }
+    } else if (member.role) {
+      // Pour les compositions générées dynamiquement
+      const memberRole = member.role.toLowerCase();
+      if (memberRole.includes('tank')) {
+        roleIcon = roleIcons.Tank;
+        roleType = 'Tank';
+      } else if (memberRole.includes('heal')) {
+        roleIcon = roleIcons.Healer;
+        roleType = 'Healer';
+      } else if (memberRole.includes('scout')) {
+        roleIcon = roleIcons.Scout;
+        roleType = 'Scout';
+      } else if (memberRole.includes('support')) {
+        roleIcon = roleIcons.Support;
+        roleType = 'Support';
+      } else {
+        roleIcon = roleIcons.DPS;
+        roleType = 'DPS';
+      }
     }
     
     let value = `${roleIcon} **${member.name}**\n📋 Rôle: ${member.role}`;
