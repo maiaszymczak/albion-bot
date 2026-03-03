@@ -35,22 +35,58 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
   const role = interaction.options.getString('role');
-  const builds = weapons[role];
   
-  if (!builds) {
-    await interaction.reply('❌ Rôle invalide !');
+  // Récupérer les armes depuis weaponsByTree
+  const allWeapons = [];
+  for (const tree of Object.values(weaponsByTree)) {
+    for (const weapon of tree) {
+      const weaponRole = weapon.role.toLowerCase();
+      
+      // Filtrer par rôle
+      if (role === 'tank' && (weaponRole.includes('tank') || weaponRole.includes('frontline'))) {
+        allWeapons.push(weapon);
+      } else if (role === 'melee_dps' && weaponRole.includes('dps') && 
+                 !weaponRole.includes('tank') && !weaponRole.includes('heal') && !weaponRole.includes('ranged')) {
+        allWeapons.push(weapon);
+      } else if (role === 'ranged_dps' && 
+                 (weaponRole.includes('ranged') || weaponRole.includes('mage') || weaponRole.includes('aoe') || weaponRole.includes('burst')) &&
+                 !weaponRole.includes('tank') && !weaponRole.includes('heal')) {
+        allWeapons.push(weapon);
+      } else if (role === 'healer' && weaponRole.includes('heal') && !weaponRole.includes('tank')) {
+        allWeapons.push(weapon);
+      }
+    }
+  }
+  
+  if (allWeapons.length === 0) {
+    await interaction.reply('❌ Aucune arme trouvée pour ce rôle !');
     return;
   }
   
-  const roleIcon = roleIcons[role.split('_')[0].charAt(0).toUpperCase() + role.split('_')[0].slice(1)] || '⚔️';
-  const buildList = builds.map(b => `${roleIcon} **${b}**`).join('\n');
+  // Équipement recommandé par rôle
+  let gearSuggestion = '';
+  if (role === 'tank') {
+    gearSuggestion = '🎽 **Équipement Tank** : Casque Judicateur/Gardien + Armure Gardien/Royale + Bottes Soldat + Soupe/Omelette T7';
+  } else if (role === 'healer') {
+    gearSuggestion = '🎽 **Équipement Healer** : Capuche Mage/Druide + Robe Mage/Druide + Sandales Mage + Omelette T7';
+  } else if (role === 'melee_dps') {
+    gearSuggestion = '🎽 **Équipement Melee DPS** : Casque Soldat/Assassin + Armure Chasseur/Assassin + Bottes Soldat + Ragout T8';
+  } else if (role === 'ranged_dps') {
+    gearSuggestion = '🎽 **Équipement Ranged DPS** : Capuche Traqueur/Assassin + Robe Druide/Veste Assassin + Sandales Royales + Ragout T8';
+  }
+  
+  const roleIcon = roleIcons.Tank || '⚔️';
+  const buildList = allWeapons
+    .slice(0, 25) // Limite Discord : 25 fields max
+    .map(w => `${w.icon || roleIcon} **${w.name}** (${w.tier}) - ${w.role}`)
+    .join('\n');
   
   const embed = {
     color: roleColors[role] || 0x0099FF,
     title: `${roleIcon} Builds disponibles - ${roleNames[role]}`,
-    description: buildList,
+    description: buildList + '\n\n' + gearSuggestion,
     footer: {
-      text: 'Albion Online - Guide des Builds'
+      text: `Albion Online - ${allWeapons.length} arme(s) disponible(s)`
     },
     timestamp: new Date().toISOString()
   };
