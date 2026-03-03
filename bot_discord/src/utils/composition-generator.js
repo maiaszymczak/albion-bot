@@ -104,12 +104,31 @@ export function generateComposition(template) {
     for (let i = 0; i < roleConfig.count; i++) {
       const weaponPool = getWeaponsForRole(roleConfig.role);
       const randomWeapon = weaponPool[Math.floor(Math.random() * weaponPool.length)];
+      
+      // Génère un équipement basé sur le rôle
+      let gearSuggestion = '';
+      const weaponRole = roleConfig.role.toLowerCase();
+      
+      if (weaponRole.includes('tank')) {
+        gearSuggestion = 'Casque Judicateur/Gardien + Armure Gardien/Royale + Bottes Soldat + Soupe/Omelette T7';
+      } else if (weaponRole.includes('heal')) {
+        gearSuggestion = 'Capuche Mage/Druide + Robe Mage/Druide + Sandales Mage + Omelette T7';
+      } else if (weaponRole.includes('melee')) {
+        gearSuggestion = 'Casque Soldat/Assassin + Armure Chasseur/Assassin + Bottes Soldat + Ragout T8';
+      } else if (weaponRole.includes('ranged')) {
+        gearSuggestion = 'Capuche Traqueur/Assassin + Robe Druide/Veste Assassin + Sandales Royales + Ragout T8';
+      } else if (weaponRole.includes('scout')) {
+        gearSuggestion = 'Casque Judicateur + Armure Crépusculaire + Bottes Pêcheur + Tourte T7';
+      } else {
+        gearSuggestion = 'Équipement adapté au rôle + Nourriture T7-T8';
+      }
+      
       composition.push({
         position: composition.length + 1,
         name: randomWeapon.name,
         type: randomWeapon.tier,
         role: randomWeapon.role,
-        gear: `${randomWeapon.tier} - ${randomWeapon.hands === 1 ? 'Main unique' : '2 Mains'}`
+        gear: `${randomWeapon.tier} - ${randomWeapon.hands === 1 ? 'Main unique' : '2 Mains'}\n${gearSuggestion}`
       });
     }
   }
