@@ -198,17 +198,16 @@ export async function execute(interaction) {
   const embed = generateEmbed(currentPage);
   const buttons = totalPages > 1 ? generateButtons(currentPage) : null;
   
-  const response = await interaction.reply({ 
+  const message = await interaction.reply({ 
     embeds: [embed], 
-    components: buttons ? [buttons] : [],
-    fetchReply: true
+    components: buttons ? [buttons] : []
   });
   
   // Si une seule page, pas besoin d'écouter les boutons
   if (totalPages <= 1) return;
   
   // Collecteur de boutons (60 secondes)
-  const collector = response.createMessageComponentCollector({ time: 60000 });
+  const collector = message.createMessageComponentCollector({ time: 60000 });
   
   collector.on('collect', async i => {
     if (i.customId === 'previous') {
