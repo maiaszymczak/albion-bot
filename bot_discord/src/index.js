@@ -187,10 +187,10 @@ client.on(Events.InteractionCreate, async interaction => {
           const roleType = roleTypeMatch[1]; // Tank, DPS, Healer, Support, Scout
           
           // Extraire le nom de l'arme depuis la première ligne du value
-          // Format: "🛡️ **Masse Incube**" ou "⚔️ **Claymore**"
+          // Format: "🛡️ **Masse Incube**" - on cherche juste le texte entre **
           const lines = fieldValue.split('\n');
           const firstLine = lines[0] || '';
-          const weaponMatch = firstLine.match(/[🛡️⚔️💚🏹🔥⚡🗡️🪓🏹]\s*\*\*(.+?)\*\*/);
+          const weaponMatch = firstLine.match(/\*\*(.+?)\*\*/);
           
           if (weaponMatch) {
             const weaponName = weaponMatch[1].trim();
