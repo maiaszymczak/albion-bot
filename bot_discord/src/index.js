@@ -455,6 +455,52 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
       }
 
+      // Appliquer une suggestion d'optimisation
+      if (interaction.customId.startsWith('apply_suggestion_')) {
+        await interaction.deferUpdate(); // Éviter l'expiration de l'interaction
+
+        const parts = interaction.customId.split('_');
+        const suggestionIndex = parseInt(parts[2]);
+        const rosterId = parts[3];
+
+        const suggestions = interaction.client.rosterSuggestions?.[rosterId];
+        if (!suggestions || !suggestions[suggestionIndex]) {
+          await interaction.editReply({ 
+            content: '❌ Suggestion expirée, veuillez relancer l\'optimisation', 
+            components: []
+          });
+          return;
+        }
+
+        const suggestion = suggestions[suggestionIndex];
+        const result = rosterManager.applySuggestion(rosterId, interaction.user.id, suggestion);
+
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+
+          const channel = interaction.channel;
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          await interaction.editReply({
+            content: `✅ Optimisation appliquée avec succès !\n\n${suggestion.message}`,
+            components: []
+          });
+        } else {
+          await interaction.editReply({
+            content: `❌ ${result.error}`,
+            components: []
+          });
+        }
+        return;
+      }
+
       // Bouton "Aide"
       if (interaction.customId === 'roster_help') {
         const helpEmbed = {
@@ -780,52 +826,6 @@ client.on(Events.InteractionCreate, async interaction => {
               components: buttonRows
             });
             break;
-        }
-        return;
-      }
-
-      // Appliquer une suggestion d'optimisation
-      if (interaction.customId.startsWith('apply_suggestion_')) {
-        await interaction.deferUpdate(); // Éviter l'expiration de l'interaction
-
-        const parts = interaction.customId.split('_');
-        const suggestionIndex = parseInt(parts[2]);
-        const rosterId = parts[3];
-
-        const suggestions = interaction.client.rosterSuggestions?.[rosterId];
-        if (!suggestions || !suggestions[suggestionIndex]) {
-          await interaction.editReply({ 
-            content: '❌ Suggestion expirée, veuillez relancer l\'optimisation', 
-            components: []
-          });
-          return;
-        }
-
-        const suggestion = suggestions[suggestionIndex];
-        const result = rosterManager.applySuggestion(rosterId, interaction.user.id, suggestion);
-
-        if (result.success) {
-          const roster = rosterManager.getRoster(rosterId);
-          const embed = generateSignupEmbed(roster);
-          const isCreator = roster.creatorId === interaction.user.id;
-          const buttons = generateSignupButtons(roster, isCreator);
-
-          const channel = interaction.channel;
-          const rosterMessage = await channel.messages.fetch(rosterId);
-          await rosterMessage.edit({
-            embeds: [embed],
-            components: buttons
-          });
-
-          await interaction.editReply({
-            content: `✅ Optimisation appliquée avec succès !\n\n${suggestion.message}`,
-            components: []
-          });
-        } else {
-          await interaction.editReply({
-            content: `❌ ${result.error}`,
-            components: []
-          });
         }
         return;
       }
