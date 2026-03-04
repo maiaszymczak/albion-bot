@@ -7,6 +7,7 @@ import express from 'express';
 import { rosterManager } from './utils/roster-manager.js';
 import { generateSignupEmbed, generateSignupButtons, generateWeaponMenu, generateEditRosterMenu, generateRoleSelectMenu, generateMemberSelectMenu } from './utils/signup-ui.js';
 import { createCustomWeaponModal, createEditQuotasModal, createEditWeaponModal, createFeedbackModal } from './utils/modal-handler.js';
+import { createNotificationManager } from './utils/notification-manager.js';
 
 dotenv.config();
 
@@ -97,6 +98,17 @@ client.on('shardResume', () => {
   console.log('✅ Connexion rétablie au gateway Discord');
 });
 
+// Initialisation du système de notifications
+client.once(Events.ClientReady, (c) => {
+  console.log('🔔 Initialisation du système de notifications...');
+  const notificationManager = createNotificationManager(c);
+  rosterManager.setNotificationManager(notificationManager);
+  
+  // Reprogrammer tous les rappels existants
+  notificationManager.rescheduleAllReminders(rosterManager.rosters, c);
+  console.log('✅ Système de notifications initialisé');
+});
+
 // Événement: Interaction (commandes slash, boutons, menus, autocomplete)
 client.on(Events.InteractionCreate, async interaction => {
   // ==================== AUTOCOMPLETE ====================
@@ -176,7 +188,10 @@ client.on(Events.InteractionCreate, async interaction => {
         const roster = rosterManager.createRoster(
           originalMessage.id,
           interaction.user.id,
-          { name: compositionName, members }
+          { name: compositionName, members },
+          null, // scheduledDate (peut être ajouté plus tard)
+          interaction.guild?.id,
+          interaction.channel?.id
         );
 
         // Générer l'interface d'inscription
@@ -195,7 +210,7 @@ client.on(Events.InteractionCreate, async interaction => {
       // Bouton "Se désinscrire"
       if (interaction.customId === 'signout') {
         const rosterId = interaction.message.id;
-        const result = rosterManager.signout(rosterId, interaction.user.id);
+        const result = rosterManager.signout(rosterId, interaction.user.id, interaction.user.username);
         
         if (result.success) {
           const roster = rosterManager.getRoster(rosterId);
@@ -348,25 +363,6 @@ client.on(Events.InteractionCreate, async interaction => {
         };
         
         await interaction.reply({ embeds: [helpEmbed], ephemeral: true });
-        return;
-      }
-
-    } catch (error) {
-      console.error('❌ Erreur lors du traitement du bouton:', error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
-      } else {
-        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
-      }
-    }
-    return;
-  }
-        
-        await interaction.reply({
-          content: '⚙️ **Modification du roster**\nChoisissez une action :',
-          components: [editMenu],
-          ephemeral: true
-        });
         return;
       }
 
@@ -828,70 +824,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
     } catch (error) {
       console.error('❌ Erreur lors du traitement du modal:', error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
-      } else {
-        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
-      }
-    }
-  }
-});
-        const roleType = interaction.customId.split('_')[2];
-        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
-        const weaponName = interaction.values[0];
-
-        // Trouver le roster ID depuis les messages récents du canal
-        const channel = interaction.channel;
-        const messages = await channel.messages.fetch({ limit: 10 });
-        let rosterId = null;
-        
-        for (const msg of messages.values()) {
-          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
-            rosterId = msg.id;
-            break;
-          }
-        }
-
-        if (!rosterId) {
-          await interaction.reply({ content: '❌ Impossible de trouver le roster.', ephemeral: true });
-          return;
-        }
-
-        // Enregistrer l'inscription
-        const result = rosterManager.signup(
-          rosterId,
-          interaction.user.id,
-          interaction.user.username,
-          capitalizedRole,
-          weaponName,
-          interaction.guild?.id
-        );
-
-        if (result.success) {
-          // Mettre à jour le message du roster
-          const roster = rosterManager.getRoster(rosterId);
-          const embed = generateSignupEmbed(roster);
-          const buttons = generateSignupButtons(roster);
-
-          const rosterMessage = await channel.messages.fetch(rosterId);
-          await rosterMessage.edit({
-            embeds: [embed],
-            components: buttons
-          });
-
-          await interaction.update({ 
-            content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${weaponName}**!`, 
-            components: [] 
-          });
-        } else {
-          await interaction.update({ 
-            content: `❌ ${result.message}`, 
-            components: [] 
-          });
-        }
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors du traitement du menu:', error);
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
       } else {

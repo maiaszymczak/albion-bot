@@ -7,10 +7,18 @@ export class RosterManager {
   constructor() {
     // Map<messageId, RosterData>
     this.rosters = new Map();
+    this.notificationManager = null; // Sera injecté depuis index.js
     this.loadRosters();
     
     // Auto-save toutes les 5 minutes
     setInterval(() => this.saveRosters(), 5 * 60 * 1000);
+  }
+
+  /**
+   * Injecte le notification manager
+   */
+  setNotificationManager(notificationManager) {
+    this.notificationManager = notificationManager;
   }
 
   /**
@@ -30,9 +38,11 @@ export class RosterManager {
   /**
    * Crée un nouveau roster
    */
-  createRoster(messageId, creatorId, composition, scheduledDate = null) {
+  createRoster(messageId, creatorId, composition, scheduledDate = null, guildId = null, channelId = null) {
     const rosterData = {
       creatorId,
+      guildId,
+      channelId,
       composition,
       signups: {}, // { roleType: [{ userId, username, weapon }] }
       waitlist: [], // [{ userId, username, role, weapon }]
@@ -46,6 +56,15 @@ export class RosterManager {
     
     this.rosters.set(messageId, rosterData);
     this.saveRosters(); // Sauvegarde immédiate
+    
+    // Programmer rappel si date prévue
+    if (scheduledDate && this.notificationManager) {
+      const messageLink = guildId && channelId 
+        ? `https://discord.com/channels/${guildId}/${channelId}/${messageId}`
+        : null;
+      this.notificationManager.scheduleReminder(messageId, scheduledDate, rosterData, messageLink);
+    }
+    
     return rosterData;
   }
 
@@ -107,6 +126,16 @@ export class RosterManager {
     if (currentCount >= quota) {
       // Ajouter à la liste d'attente
       roster.waitlist.push({ userId, username, role, weapon, timestamp: Date.now() });
+      
+      // Notifier l'utilisateur qu'il est en waitlist
+      if (this.notificationManager) {
+        this.notificationManager.notifyWaitlisted(
+          userId,
+          roster.composition.name || 'Composition',
+          roster.waitlist.length
+        );
+      }
+      
       this.saveRosters();
       return { success: true, waitlisted: true, message: 'Ajouté à la liste d\'attente' };
     }
@@ -129,6 +158,26 @@ export class RosterManager {
     
     if (totalSignups >= totalQuota) {
       roster.status = 'full';
+      
+      // Notifier le créateur que le roster est complet
+      if (this.notificationManager) {
+        this.notificationManager.notifyCreatorRosterFull(
+          roster.creatorId,
+          roster.composition.name || 'Composition',
+          totalSignups
+        );
+      }
+    }
+
+    // Notifier le créateur de la nouvelle inscription
+    if (this.notificationManager) {
+      this.notificationManager.notifyCreatorNewSignup(
+        roster.creatorId,
+        username,
+        role,
+        weapon,
+        roster.composition.name || 'Composition'
+      );
     }
 
     this.saveRosters();
@@ -138,7 +187,7 @@ export class RosterManager {
   /**
    * Désinscrit un joueur
    */
-  signout(messageId, userId) {
+  signout(messageId, userId, username = 'Un joueur') {
     const roster = this.rosters.get(messageId);
     if (!roster) return { success: false, error: 'Roster introuvable' };
 
@@ -165,7 +214,17 @@ export class RosterManager {
           return { success: true, message: 'Retiré de la liste d\'attente', roster };
         }
       }
-      return { success: false, error: 'Vous n\'êtes pas inscrit' };
+      return { success: false, error: 'Vous n\'\u00eates pas inscrit' };
+    }
+
+    // Notifier le créateur de la désinscription
+    if (this.notificationManager) {
+      this.notificationManager.notifyCreatorSignout(
+        roster.creatorId,
+        username,
+        removedRole,
+        roster.composition.name || 'Composition'
+      );
     }
 
     // Promouvoir quelqu'un de la waitlist
@@ -200,6 +259,17 @@ export class RosterManager {
       weapon: promoted.weapon,
       timestamp: Date.now()
     });
+
+    // Notifier l'utilisateur de sa promotion
+    if (this.notificationManager) {
+      this.notificationManager.notifyPromotion(
+        promoted.userId,
+        promoted.username,
+        roleType,
+        promoted.weapon,
+        roster.composition.name || 'Composition'
+      );
+    }
 
     return promoted;
   }
@@ -331,6 +401,16 @@ export class RosterManager {
     
     roster.status = 'completed';
     this.saveRosters();
+    
+    // Notifier tous les participants
+    if (this.notificationManager) {
+      this.notificationManager.notifyEventCompleted(roster);
+    }
+    
+    // Annuler le rappel si programmé
+    if (this.notificationManager) {
+      this.notificationManager.cancelReminder(messageId);
+    }
     
     return { success: true, roster };
   }
