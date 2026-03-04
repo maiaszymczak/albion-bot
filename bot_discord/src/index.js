@@ -1095,8 +1095,6 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         return;
       }
-        return;
-      }
 
     } catch (error) {
       console.error('❌ Erreur lors du traitement du menu:', error);
