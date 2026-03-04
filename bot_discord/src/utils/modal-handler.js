@@ -36,6 +36,51 @@ export function createCustomWeaponModal(roleType, rosterId = '') {
 }
 
 /**
+ * Crée un modal pour ajouter un swap (build alternatif)
+ */
+export function createSwapModal(rosterId = '') {
+  const customId = rosterId 
+    ? `add_swap_modal_${rosterId}`
+    : 'add_swap_modal';
+    
+  const modal = new ModalBuilder()
+    .setCustomId(customId)
+    .setTitle('Ajouter un build alternatif (swap)');
+
+  const roleInput = new TextInputBuilder()
+    .setCustomId('swap_role')
+    .setLabel('Rôle')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('Tank, DPS, Healer, Support ou Scout')
+    .setRequired(true)
+    .setMaxLength(20);
+
+  const weaponInput = new TextInputBuilder()
+    .setCustomId('swap_weapon')
+    .setLabel('Arme')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('Ex: Bâton Runique, Arc Longue Portée')
+    .setRequired(true)
+    .setMaxLength(100);
+
+  const armorInput = new TextInputBuilder()
+    .setCustomId('swap_armor')
+    .setLabel('Armure (optionnel)')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('Ex: Robe de Mage, Cuir Assassin')
+    .setRequired(false)
+    .setMaxLength(100);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(roleInput),
+    new ActionRowBuilder().addComponents(weaponInput),
+    new ActionRowBuilder().addComponents(armorInput)
+  );
+
+  return modal;
+}
+
+/**
  * Crée un modal pour modifier les quotas
  */
 export function createEditQuotasModal(currentQuotas) {

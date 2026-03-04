@@ -170,7 +170,14 @@ export class RosterManager {
       roster.signups[role] = [];
     }
     
-    roster.signups[role].push({ userId, username, weapon, armor, timestamp: Date.now() });
+    roster.signups[role].push({ 
+      userId, 
+      username, 
+      weapon, 
+      armor, 
+      swaps: [], // Liste des builds alternatifs
+      timestamp: Date.now() 
+    });
 
     // Enregistrer la participation dans les stats
     if (guildId) {
@@ -207,6 +214,56 @@ export class RosterManager {
 
     this.saveRosters();
     return { success: true, roster };
+  }
+
+  /**
+   * Ajoute un swap (build alternatif) pour un joueur inscrit
+   */
+  addSwap(messageId, userId, swapRole, swapWeapon, swapArmor = null) {
+    const roster = this.rosters.get(messageId);
+    if (!roster) return { success: false, error: 'Roster introuvable' };
+
+    // Trouver l'inscription du joueur
+    let userSignup = null;
+    let currentRole = null;
+    
+    for (const [roleType, signups] of Object.entries(roster.signups)) {
+      const signup = signups.find(s => s.userId === userId);
+      if (signup) {
+        userSignup = signup;
+        currentRole = roleType;
+        break;
+      }
+    }
+
+    if (!userSignup) {
+      return { success: false, error: 'Vous devez d\'abord vous inscrire avec un build principal' };
+    }
+
+    // Vérifier que le swap n'existe pas déjà
+    const swapExists = userSignup.swaps?.some(s => 
+      s.role === swapRole && s.weapon === swapWeapon
+    );
+
+    if (swapExists) {
+      return { success: false, error: 'Ce swap existe déjà' };
+    }
+
+    // Initialiser swaps si nécessaire
+    if (!userSignup.swaps) {
+      userSignup.swaps = [];
+    }
+
+    // Ajouter le swap
+    userSignup.swaps.push({
+      role: swapRole,
+      weapon: swapWeapon,
+      armor: swapArmor,
+      addedAt: Date.now()
+    });
+
+    this.saveRosters();
+    return { success: true, swapCount: userSignup.swaps.length };
   }
 
   /**

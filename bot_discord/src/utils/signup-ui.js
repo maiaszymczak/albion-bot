@@ -25,7 +25,14 @@ export function generateSignupEmbed(roster) {
         if (s.armor) {
           equipment += ` + ${s.armor}`;
         }
-        return `• ${s.username} - ${equipment}`;
+        
+        // Afficher le nombre de swaps si présents
+        let swapInfo = '';
+        if (s.swaps && s.swaps.length > 0) {
+          swapInfo = ` 🔄(${s.swaps.length})`;
+        }
+        
+        return `• ${s.username} - ${equipment}${swapInfo}`;
       }).join('\n');
     } else {
       value += '_(Aucune inscription)_';

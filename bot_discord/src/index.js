@@ -1,4 +1,4 @@
-import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -6,7 +6,7 @@ import { readdirSync } from 'fs';
 import express from 'express';
 import { rosterManager } from './utils/roster-manager.js';
 import { generateSignupEmbed, generateSignupButtons, generateWeaponMenu, generateEditRosterMenu, generateRoleSelectMenu, generateMemberSelectMenu } from './utils/signup-ui.js';
-import { createCustomWeaponModal, createEditQuotasModal, createEditWeaponModal, createFeedbackModal } from './utils/modal-handler.js';
+import { createCustomWeaponModal, createEditQuotasModal, createEditWeaponModal, createFeedbackModal, createSwapModal } from './utils/modal-handler.js';
 import { createNotificationManager } from './utils/notification-manager.js';
 
 dotenv.config();
@@ -447,6 +447,14 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
       }
 
+      // Bouton "Ajouter un swap"
+      if (interaction.customId.startsWith('add_swap_')) {
+        const rosterId = interaction.customId.split('_')[2];
+        const modal = createSwapModal(rosterId);
+        await interaction.showModal(modal);
+        return;
+      }
+
       // Bouton "Aide"
       if (interaction.customId === 'roster_help') {
         const helpEmbed = {
@@ -620,9 +628,18 @@ client.on(Events.InteractionCreate, async interaction => {
               components: buttons
             });
 
+            // Créer un bouton pour ajouter un swap
+            const addSwapButton = new ButtonBuilder()
+              .setCustomId(`add_swap_${rosterId}`)
+              .setLabel('➕ Ajouter un swap')
+              .setStyle(ButtonStyle.Secondary)
+              .setEmoji('🔄');
+
+            const swapRow = new ActionRowBuilder().addComponents(addSwapButton);
+
             await interaction.update({ 
-              content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${weaponName}**!`, 
-              components: [] 
+              content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${weaponName}**!\n\n💡 Vous pouvez ajouter des builds alternatifs (swaps) que vous savez jouer.`, 
+              components: [swapRow]
             });
           } else {
             await interaction.update({ 
@@ -1005,6 +1022,59 @@ client.on(Events.InteractionCreate, async interaction => {
               ephemeral: true 
             });
           }
+        }
+        return;
+      }
+
+      // Modal ajout de swap
+      if (interaction.customId.startsWith('add_swap_modal_')) {
+        const rosterId = interaction.customId.split('_').pop();
+        const swapRole = interaction.fields.getTextInputValue('swap_role');
+        const swapWeapon = interaction.fields.getTextInputValue('swap_weapon');
+        const swapArmor = interaction.fields.getTextInputValue('swap_armor') || null;
+
+        // Normaliser le rôle
+        const roleMapping = {
+          'tank': 'Tank',
+          'dps': 'DPS',
+          'healer': 'Healer',
+          'support': 'Support',
+          'scout': 'Scout'
+        };
+        const normalizedRole = roleMapping[swapRole.toLowerCase()] || swapRole.charAt(0).toUpperCase() + swapRole.slice(1).toLowerCase();
+
+        const result = rosterManager.addSwap(
+          rosterId,
+          interaction.user.id,
+          normalizedRole,
+          swapWeapon,
+          swapArmor
+        );
+
+        if (result.success) {
+          // Proposer d'ajouter un autre swap
+          const addAnotherButton = new ButtonBuilder()
+            .setCustomId(`add_swap_${rosterId}`)
+            .setLabel('➕ Ajouter un autre swap')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('🔄');
+
+          const swapRow = new ActionRowBuilder().addComponents(addAnotherButton);
+
+          const equipmentText = swapArmor 
+            ? `**${normalizedRole}** avec **${swapWeapon}** + **${swapArmor}**`
+            : `**${normalizedRole}** avec **${swapWeapon}**`;
+
+          await interaction.reply({ 
+            content: `✅ Swap ajouté : ${equipmentText}\n📊 Total de swaps : **${result.swapCount}**`, 
+            components: [swapRow],
+            ephemeral: true 
+          });
+        } else {
+          await interaction.reply({ 
+            content: `❌ ${result.error || 'Erreur lors de l\'ajout du swap'}`, 
+            ephemeral: true 
+          });
         }
         return;
       }
