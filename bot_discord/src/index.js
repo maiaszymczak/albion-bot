@@ -4,6 +4,9 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
 import express from 'express';
+import { rosterManager } from './utils/roster-manager.js';
+import { generateSignupEmbed, generateSignupButtons, generateWeaponMenu, generateEditRosterMenu, generateRoleSelectMenu, generateMemberSelectMenu } from './utils/signup-ui.js';
+import { createCustomWeaponModal, createEditQuotasModal, createEditWeaponModal } from './utils/modal-handler.js';
 
 dotenv.config();
 
@@ -94,31 +97,632 @@ client.on('shardResume', () => {
   console.log('✅ Connexion rétablie au gateway Discord');
 });
 
-// Événement: Interaction (commandes slash)
+// Événement: Interaction (commandes slash, boutons, menus)
 client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+  // ==================== COMMANDES SLASH ====================
+  if (interaction.isChatInputCommand()) {
+    const command = interaction.client.commands.get(interaction.commandName);
 
-  const command = interaction.client.commands.get(interaction.commandName);
+    if (!command) {
+      console.error(`❌ Commande inconnue: ${interaction.commandName}`);
+      return;
+    }
 
-  if (!command) {
-    console.error(`❌ Commande inconnue: ${interaction.commandName}`);
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(`❌ Erreur lors de l'exécution de ${interaction.commandName}:`, error);
+      
+      const errorMessage = {
+        content: '❌ Une erreur s\'est produite lors de l\'exécution de cette commande !',
+        ephemeral: true
+      };
+      
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
+    }
     return;
   }
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(`❌ Erreur lors de l'exécution de ${interaction.commandName}:`, error);
-    
-    const errorMessage = {
-      content: '❌ Une erreur s\'est produite lors de l\'exécution de cette commande !',
-      ephemeral: true
-    };
-    
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(errorMessage);
-    } else {
-      await interaction.reply(errorMessage);
+  // ==================== BOUTONS ====================
+  if (interaction.isButton()) {
+    try {
+      // Bouton "Ouvrir les inscriptions"
+      if (interaction.customId === 'open_signup') {
+        const originalMessage = interaction.message;
+        const embed = originalMessage.embeds[0];
+        
+        if (!embed) {
+          await interaction.reply({ content: '❌ Impossible de récupérer les données de la composition.', ephemeral: true });
+          return;
+        }
+
+        // Extraire les données de la composition depuis l'embed
+        const compositionName = embed.title || 'Composition';
+        const members = [];
+        
+        for (const field of embed.fields) {
+          // Extraire les membres depuis les fields de l'embed
+          const lines = field.value.split('\n');
+          for (const line of lines) {
+            // Format: "1️⃣ 🛡️ **Nom** - Role: Tank - Stuff: ..."
+            const match = line.match(/\*\*(.*?)\*\*.*?Role:\s*(.*?)\s*-/);
+            if (match) {
+              const weaponName = match[1].trim();
+              const role = match[2].trim();
+              members.push({ weapon: weaponName, role: role });
+            }
+          }
+        }
+
+        // Créer le roster
+        const roster = rosterManager.createRoster(
+          originalMessage.id,
+          interaction.user.id,
+          { name: compositionName, members }
+        );
+
+        // Générer l'interface d'inscription
+        const signupEmbed = generateSignupEmbed(roster);
+        const isCreator = true; // Celui qui ouvre est forcément le créateur
+        const signupButtons = generateSignupButtons(roster, isCreator);
+
+        await interaction.reply({
+          embeds: [signupEmbed],
+          components: signupButtons
+        });
+
+        return;
+      }
+
+      // Bouton "Se désinscrire"
+      if (interaction.customId === 'signout') {
+        const rosterId = interaction.message.id;
+        const result = rosterManager.signout(rosterId, interaction.user.id);
+        
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+          
+          await interaction.update({
+            embeds: [embed],
+            components: buttons
+          });
+        } else {
+          await interaction.reply({ content: `❌ ${result.message}`, ephemeral: true });
+        }
+        return;
+      }
+
+      // Bouton "Fermer"
+      if (interaction.customId === 'close_signup') {
+        const rosterId = interaction.message.id;
+        const result = rosterManager.close(rosterId, interaction.user.id);
+        
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+          
+          await interaction.update({
+            embeds: [embed],
+            components: buttons
+          });
+        } else {
+          await interaction.reply({ content: `❌ ${result.message}`, ephemeral: true });
+        }
+        return;
+      }
+
+      // Boutons de sélection de rôle
+      if (interaction.customId.startsWith('signup_')) {
+        const roleType = interaction.customId.split('_')[1];
+        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        
+        // Générer le menu de sélection d'armes
+        const weaponMenu = generateWeaponMenu(capitalizedRole);
+        
+        await interaction.reply({
+          content: `Choisissez votre arme pour le rôle **${capitalizedRole}** :`,
+          components: [weaponMenu],
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Bouton "Modifier" (créateur uniquement)
+      if (interaction.customId === 'edit_roster') {
+        const rosterId = interaction.message.id;
+        const roster = rosterManager.getRoster(rosterId);
+        
+        if (!roster) {
+          await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
+          return;
+        }
+        
+        if (roster.creatorId !== interaction.user.id) {
+          await interaction.reply({ content: '❌ Seul le créateur peut modifier le roster', ephemeral: true });
+          return;
+        }
+        
+        const editMenu = generateEditRosterMenu(roster);
+        
+        await interaction.reply({
+          content: '⚙️ **Modification du roster**\nChoisissez une action :',
+          components: [editMenu],
+          ephemeral: true
+        });
+        return;
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur lors du traitement du bouton:', error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      }
+    }
+    return;
+  }
+
+  // ==================== MENUS DE SÉLECTION ====================
+  if (interaction.isStringSelectMenu()) {
+    try {
+      // Menu de sélection d'armes
+      if (interaction.customId.startsWith('weapon_select_')) {
+        const roleType = interaction.customId.split('_')[2];
+        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        const weaponName = interaction.values[0];
+
+        // Cas spécial: arme personnalisée
+        if (weaponName === 'custom_weapon') {
+          const modal = createCustomWeaponModal(capitalizedRole);
+          await interaction.showModal(modal);
+          return;
+        }
+
+        // Trouver le roster ID depuis les messages récents du canal
+        const channel = interaction.channel;
+        const messages = await channel.messages.fetch({ limit: 10 });
+        let rosterId = null;
+        
+        for (const msg of messages.values()) {
+          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
+            rosterId = msg.id;
+            break;
+          }
+        }
+
+        if (!rosterId) {
+          await interaction.reply({ content: '❌ Impossible de trouver le roster.', ephemeral: true });
+          return;
+        }
+
+        // Enregistrer l'inscription
+        const result = rosterManager.signup(
+          rosterId,
+          interaction.user.id,
+          interaction.user.username,
+          capitalizedRole,
+          weaponName
+        );
+
+        if (result.success) {
+          // Mettre à jour le message du roster
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          await interaction.update({ 
+            content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${weaponName}**!`, 
+            components: [] 
+          });
+        } else {
+          await interaction.update({ 
+            content: `❌ ${result.message}`, 
+            components: [] 
+          });
+        }
+        return;
+      }
+
+      // Menu d'édition du roster
+      if (interaction.customId === 'edit_roster_menu') {
+        const action = interaction.values[0];
+        const channel = interaction.channel;
+        const messages = await channel.messages.fetch({ limit: 10 });
+        let rosterId = null;
+        
+        for (const msg of messages.values()) {
+          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
+            rosterId = msg.id;
+            break;
+          }
+        }
+
+        if (!rosterId) {
+          await interaction.reply({ content: '❌ Impossible de trouver le roster.', ephemeral: true });
+          return;
+        }
+
+        const roster = rosterManager.getRoster(rosterId);
+
+        switch (action) {
+          case 'edit_quotas':
+            const quotasModal = createEditQuotasModal(roster.quotas);
+            await interaction.showModal(quotasModal);
+            break;
+
+          case 'add_slot':
+            const addRoleMenu = generateRoleSelectMenu();
+            await interaction.update({
+              content: '➕ **Ajouter un slot**\nSélectionnez le rôle :',
+              components: [addRoleMenu]
+            });
+            break;
+
+          case 'remove_slot':
+            const removeRoleMenu = generateRoleSelectMenu();
+            await interaction.update({
+              content: '➖ **Retirer un slot**\nSélectionnez le rôle :',
+              components: [removeRoleMenu]
+            });
+            break;
+
+          case 'edit_signup':
+            const memberMenu = generateMemberSelectMenu(roster);
+            await interaction.update({
+              content: '✏️ **Modifier un inscrit**\nSélectionnez le membre :',
+              components: [memberMenu]
+            });
+            break;
+
+          case 'kick_member':
+            const kickMenu = generateMemberSelectMenu(roster);
+            await interaction.update({
+              content: '👢 **Expulser un membre**\nSélectionnez le membre :',
+              components: [kickMenu]
+            });
+            break;
+        }
+        return;
+      }
+
+      // Menu de sélection de rôle pour ajout/retrait de slot
+      if (interaction.customId === 'select_role_to_modify') {
+        const roleType = interaction.values[0];
+        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        
+        const channel = interaction.channel;
+        const messages = await channel.messages.fetch({ limit: 10 });
+        let rosterId = null;
+        
+        for (const msg of messages.values()) {
+          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
+            rosterId = msg.id;
+            break;
+          }
+        }
+
+        if (!rosterId) {
+          await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
+          return;
+        }
+
+        const roster = rosterManager.getRoster(rosterId);
+        const currentQuota = roster.quotas[capitalizedRole] || 0;
+
+        // Déterminer si c'est un ajout ou retrait selon le message précédent
+        const isAdding = interaction.message.content.includes('Ajouter');
+        const newQuota = isAdding ? currentQuota + 1 : Math.max(0, currentQuota - 1);
+
+        const result = rosterManager.updateQuotas(rosterId, interaction.user.id, {
+          [capitalizedRole]: newQuota
+        });
+
+        if (result.success) {
+          const updatedRoster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(updatedRoster);
+          const isCreator = updatedRoster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(updatedRoster, isCreator);
+
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          await interaction.update({
+            content: `✅ ${capitalizedRole}: ${currentQuota} → ${newQuota}`,
+            components: []
+          });
+        } else {
+          await interaction.update({
+            content: `❌ ${result.message}`,
+            components: []
+          });
+        }
+        return;
+      }
+
+      // Menu de sélection de membre pour modification/kick
+      if (interaction.customId === 'select_member_to_modify') {
+        const value = interaction.values[0];
+        
+        if (value === 'none') {
+          await interaction.update({ content: '❌ Aucun membre inscrit', components: [] });
+          return;
+        }
+
+        const [userId, oldRole] = value.split('_');
+        const isKick = interaction.message.content.includes('Expulser');
+
+        const channel = interaction.channel;
+        const messages = await channel.messages.fetch({ limit: 10 });
+        let rosterId = null;
+        
+        for (const msg of messages.values()) {
+          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
+            rosterId = msg.id;
+            break;
+          }
+        }
+
+        if (!rosterId) {
+          await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
+          return;
+        }
+
+        if (isKick) {
+          // Expulser le membre
+          const result = rosterManager.kick(rosterId, interaction.user.id, userId);
+          
+          if (result.success) {
+            const roster = rosterManager.getRoster(rosterId);
+            const embed = generateSignupEmbed(roster);
+            const isCreator = roster.creatorId === interaction.user.id;
+            const buttons = generateSignupButtons(roster, isCreator);
+
+            const rosterMessage = await channel.messages.fetch(rosterId);
+            await rosterMessage.edit({
+              embeds: [embed],
+              components: buttons
+            });
+
+            await interaction.update({
+              content: `✅ Membre expulsé avec succès`,
+              components: []
+            });
+          } else {
+            await interaction.update({
+              content: `❌ ${result.message}`,
+              components: []
+            });
+          }
+        } else {
+          // Modifier le membre - afficher menu pour choisir nouveau rôle et arme
+          const roleMenu = generateRoleSelectMenu();
+          
+          // Stocker temporairement l'userId dans le customId du prochain menu
+          await interaction.update({
+            content: `✏️ **Modifier le membre**\nChoisissez le nouveau rôle :`,
+            components: [roleMenu]
+          });
+          
+          // Stocker l'userId dans une variable temporaire (limitation: utiliser un Map global ou le message)
+          interaction.client.tempEditUserId = userId;
+        }
+        return;
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur lors du traitement du menu:', error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      }
+    }
+    return;
+  }
+
+  // ==================== MODALS ====================
+  if (interaction.isModalSubmit()) {
+    try {
+      // Modal arme personnalisée
+      if (interaction.customId.startsWith('custom_weapon_modal_')) {
+        const roleType = interaction.customId.split('_')[3];
+        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        const customWeapon = interaction.fields.getTextInputValue('custom_weapon_name');
+
+        // Trouver le roster
+        const channel = interaction.channel;
+        const messages = await channel.messages.fetch({ limit: 10 });
+        let rosterId = null;
+        
+        for (const msg of messages.values()) {
+          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
+            rosterId = msg.id;
+            break;
+          }
+        }
+
+        if (!rosterId) {
+          await interaction.reply({ content: '❌ Impossible de trouver le roster.', ephemeral: true });
+          return;
+        }
+
+        // Enregistrer l'inscription avec l'arme personnalisée
+        const result = rosterManager.signup(
+          rosterId,
+          interaction.user.id,
+          interaction.user.username,
+          capitalizedRole,
+          customWeapon
+        );
+
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          await interaction.reply({ 
+            content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${customWeapon}**!`, 
+            ephemeral: true 
+          });
+        } else {
+          await interaction.reply({ 
+            content: `❌ ${result.message}`, 
+            ephemeral: true 
+          });
+        }
+        return;
+      }
+
+      // Modal modification des quotas
+      if (interaction.customId === 'edit_quotas_modal') {
+        const newQuotas = {
+          Tank: parseInt(interaction.fields.getTextInputValue('quota_tank')) || 0,
+          DPS: parseInt(interaction.fields.getTextInputValue('quota_dps')) || 0,
+          Healer: parseInt(interaction.fields.getTextInputValue('quota_healer')) || 0,
+          Support: parseInt(interaction.fields.getTextInputValue('quota_support')) || 0,
+          Scout: parseInt(interaction.fields.getTextInputValue('quota_scout')) || 0
+        };
+
+        const channel = interaction.channel;
+        const messages = await channel.messages.fetch({ limit: 10 });
+        let rosterId = null;
+        
+        for (const msg of messages.values()) {
+          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
+            rosterId = msg.id;
+            break;
+          }
+        }
+
+        if (!rosterId) {
+          await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
+          return;
+        }
+
+        const result = rosterManager.updateQuotas(rosterId, interaction.user.id, newQuotas);
+
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          await interaction.reply({
+            content: `✅ Quotas mis à jour avec succès!`,
+            ephemeral: true
+          });
+        } else {
+          await interaction.reply({
+            content: `❌ ${result.message}`,
+            ephemeral: true
+          });
+        }
+        return;
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur lors du traitement du modal:', error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      }
+    }
+  }
+});
+        const roleType = interaction.customId.split('_')[2];
+        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        const weaponName = interaction.values[0];
+
+        // Trouver le roster ID depuis les messages récents du canal
+        const channel = interaction.channel;
+        const messages = await channel.messages.fetch({ limit: 10 });
+        let rosterId = null;
+        
+        for (const msg of messages.values()) {
+          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
+            rosterId = msg.id;
+            break;
+          }
+        }
+
+        if (!rosterId) {
+          await interaction.reply({ content: '❌ Impossible de trouver le roster.', ephemeral: true });
+          return;
+        }
+
+        // Enregistrer l'inscription
+        const result = rosterManager.signup(
+          rosterId,
+          interaction.user.id,
+          interaction.user.username,
+          capitalizedRole,
+          weaponName
+        );
+
+        if (result.success) {
+          // Mettre à jour le message du roster
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const buttons = generateSignupButtons(roster);
+
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          await interaction.update({ 
+            content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${weaponName}**!`, 
+            components: [] 
+          });
+        } else {
+          await interaction.update({ 
+            content: `❌ ${result.message}`, 
+            components: [] 
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du traitement du menu:', error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      }
     }
   }
 });

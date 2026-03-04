@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { compositions } from '../data/albion-data.js';
 import { generateComposition, generateCustomComposition, formatCompositionEmbed } from '../utils/composition-generator.js';
 
@@ -92,13 +92,27 @@ export async function execute(interaction) {
   // Si c'est une composition preset (avec builds prédéfinis)
   if (template.preset) {
     const embed = formatCompositionEmbed(template, template.preset);
-    await interaction.reply({ embeds: [embed] });
+    const signupButton = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('open_signup')
+          .setLabel('📋 Ouvrir les inscriptions')
+          .setStyle(ButtonStyle.Success)
+      );
+    await interaction.reply({ embeds: [embed], components: [signupButton] });
     return;
   }
   
   // Sinon génération aléatoire
   const composition = generateComposition(template.template);
   const embed = formatCompositionEmbed(template, composition);
+  const signupButton = new ActionRowBuilder()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId('open_signup')
+        .setLabel('📋 Ouvrir les inscriptions')
+        .setStyle(ButtonStyle.Success)
+    );
   
-  await interaction.reply({ embeds: [embed] });
+  await interaction.reply({ embeds: [embed], components: [signupButton] });
 }

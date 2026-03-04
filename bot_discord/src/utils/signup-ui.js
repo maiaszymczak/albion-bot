@@ -1,0 +1,267 @@
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } from 'discord.js';
+import { rosterManager } from './roster-manager.js';
+import { weaponsByTree, roleIcons } from '../data/albion-data.js';
+
+/**
+ * Génère l'embed d'inscription
+ */
+export function generateSignupEmbed(roster) {
+  const fields = [];
+  
+  for (const [roleType, quota] of Object.entries(roster.quotas)) {
+    if (quota === 0) continue;
+    
+    const signups = roster.signups[roleType] || [];
+    const count = signups.length;
+    const icon = roleIcons[roleType] || '⚔️';
+    
+    let value = '';
+    if (signups.length > 0) {
+      value = signups.map(s => `• ${s.username} - ${s.weapon}`).join('\n');
+    } else {
+      value = '_(Aucune inscription)_';
+    }
+    
+    fields.push({
+      name: `${icon} ${roleType} (${count}/${quota})`,
+      value,
+      inline: false
+    });
+  }
+  
+  const totalSignups = Object.values(roster.signups).reduce((sum, arr) => sum + arr.length, 0);
+  const totalQuota = Object.values(roster.quotas).reduce((sum, q) => sum + q, 0);
+  
+  let statusEmoji = '🟢';
+  let statusText = 'Ouvert';
+  if (roster.status === 'closed') {
+    statusEmoji = '🔴';
+    statusText = 'Fermé';
+  } else if (roster.status === 'full') {
+    statusEmoji = '🟡';
+    statusText = 'Complet';
+  }
+  
+  return {
+    color: roster.status === 'open' ? 0x2ecc71 : (roster.status === 'full' ? 0xf39c12 : 0xe74c3c),
+    title: `📋 Inscriptions - ${roster.composition.name || 'Composition'}`,
+    description: `${statusEmoji} **Status:** ${statusText}\n👥 **Inscrits:** ${totalSignups}/${totalQuota}`,
+    fields,
+    footer: {
+      text: 'Cliquez sur un bouton pour vous inscrire • Les inscriptions restent ouvertes 24h'
+    },
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Génère les boutons d'inscription
+ */
+export function generateSignupButtons(roster, isCreator = false) {
+  const buttons = [];
+  
+  for (const [roleType, quota] of Object.entries(roster.quotas)) {
+    if (quota === 0) continue;
+    
+    const signups = roster.signups[roleType] || [];
+    const icon = roleIcons[roleType] || '⚔️';
+    const disabled = signups.length >= quota || roster.status === 'closed';
+    
+    buttons.push(
+      new ButtonBuilder()
+        .setCustomId(`signup_${roleType.toLowerCase()}`)
+        .setLabel(`${icon} ${roleType}`)
+        .setStyle(disabled ? ButtonStyle.Secondary : ButtonStyle.Primary)
+        .setDisabled(disabled)
+    );
+  }
+  
+  buttons.push(
+    new ButtonBuilder()
+      .setCustomId('signout')
+      .setLabel('❌ Se désinscrire')
+      .setStyle(ButtonStyle.Danger)
+  );
+  
+  // Boutons admin (uniquement pour le créateur)
+  if (isCreator) {
+    buttons.push(
+      new ButtonBuilder()
+        .setCustomId('edit_roster')
+        .setLabel('✏️ Modifier')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  }
+  
+  buttons.push(
+    new ButtonBuilder()
+      .setCustomId('close_signup')
+      .setLabel('🔒 Fermer')
+      .setStyle(ButtonStyle.Secondary)
+  );
+  
+  // Discord limite à 5 boutons par row, donc on fait 2 rows si nécessaire
+  const rows = [];
+  for (let i = 0; i < buttons.length; i += 5) {
+    const row = new ActionRowBuilder()
+      .addComponents(buttons.slice(i, i + 5));
+    rows.push(row);
+  }
+  
+  return rows;
+}
+
+/**
+ * Génère le menu de sélection d'armes
+ */
+export function generateWeaponMenu(roleType) {
+  const weapons = [];
+  
+  // Filtrer les armes par rôle
+  for (const tree of Object.values(weaponsByTree)) {
+    for (const weapon of tree) {
+      const weaponRole = weapon.role.toLowerCase();
+      
+      if (roleType === 'Tank' && (weaponRole.includes('tank') || weaponRole.includes('frontline'))) {
+        weapons.push(weapon);
+      } else if (roleType === 'DPS' && weaponRole.includes('dps') && 
+                 !weaponRole.includes('tank') && !weaponRole.includes('heal')) {
+        weapons.push(weapon);
+      } else if (roleType === 'Healer' && weaponRole.includes('heal') && !weaponRole.includes('tank')) {
+        weapons.push(weapon);
+      } else if (roleType === 'Support' && weaponRole.includes('support')) {
+        weapons.push(weapon);
+      } else if (roleType === 'Scout' && weaponRole.includes('scout')) {
+        weapons.push(weapon);
+      }
+    }
+  }
+  
+  // Limiter à 24 options (on garde 1 place pour "Autre")
+  const options = weapons.slice(0, 24).map(w => ({
+    label: `${w.name} (${w.tier})`,
+    value: w.name,
+    description: w.role.substring(0, 100), // Limite 100 chars
+    emoji: w.icon
+  }));
+  
+  // Ajouter l'option "Autre" pour saisie manuelle
+  options.push({
+    label: '✍️ Autre (saisie manuelle)',
+    value: 'custom_weapon',
+    description: 'Entrer un nom d\'arme personnalisé',
+    emoji: '✍️'
+  });
+  
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId(`weapon_select_${roleType.toLowerCase()}`)
+    .setPlaceholder(`Choisissez votre arme ${roleType}`)
+    .addOptions(options);
+  
+  return new ActionRowBuilder().addComponents(menu);
+}
+
+/**
+ * Génère l'interface de modification de roster (pour le créateur)
+ */
+export function generateEditRosterMenu(roster) {
+  const options = [];
+  
+  // Option pour modifier les quotas
+  options.push({
+    label: '📊 Modifier les quotas de rôles',
+    value: 'edit_quotas',
+    description: 'Ajuster le nombre de places par rôle',
+    emoji: '📊'
+  });
+  
+  // Option pour ajouter/retirer des places
+  options.push({
+    label: '➕ Ajouter un slot',
+    value: 'add_slot',
+    description: 'Ajouter une place pour un rôle',
+    emoji: '➕'
+  });
+  
+  options.push({
+    label: '➖ Retirer un slot',
+    value: 'remove_slot',
+    description: 'Retirer une place d\'un rôle',
+    emoji: '➖'
+  });
+  
+  // Option pour modifier un inscrit
+  options.push({
+    label: '✏️ Modifier un inscrit',
+    value: 'edit_signup',
+    description: 'Changer le rôle/arme d\'un membre',
+    emoji: '✏️'
+  });
+  
+  // Option pour kick
+  options.push({
+    label: '👢 Expulser un membre',
+    value: 'kick_member',
+    description: 'Retirer un membre du roster',
+    emoji: '👢'
+  });
+  
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('edit_roster_menu')
+    .setPlaceholder('Choisissez une action de modification')
+    .addOptions(options);
+  
+  return new ActionRowBuilder().addComponents(menu);
+}
+
+/**
+ * Génère le menu de sélection de rôle pour modification
+ */
+export function generateRoleSelectMenu() {
+  const roles = ['Tank', 'DPS', 'Healer', 'Support', 'Scout'];
+  const options = roles.map(role => ({
+    label: `${roleIcons[role]} ${role}`,
+    value: role.toLowerCase(),
+    emoji: roleIcons[role]
+  }));
+  
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('select_role_to_modify')
+    .setPlaceholder('Sélectionnez un rôle')
+    .addOptions(options);
+  
+  return new ActionRowBuilder().addComponents(menu);
+}
+
+/**
+ * Génère le menu de sélection d'un membre inscrit
+ */
+export function generateMemberSelectMenu(roster) {
+  const options = [];
+  
+  for (const [roleType, signups] of Object.entries(roster.signups)) {
+    for (const signup of signups) {
+      options.push({
+        label: `${signup.username} (${roleType})`,
+        value: `${signup.userId}_${roleType}`,
+        description: `${roleType} - ${signup.weapon}`,
+        emoji: roleIcons[roleType]
+      });
+    }
+  }
+  
+  if (options.length === 0) {
+    options.push({
+      label: 'Aucun membre inscrit',
+      value: 'none',
+      description: 'Personne n\'est encore inscrit'
+    });
+  }
+  
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('select_member_to_modify')
+    .setPlaceholder('Sélectionnez un membre')
+    .addOptions(options.slice(0, 25)); // Limite Discord
+  
+  return new ActionRowBuilder().addComponents(menu);
+}
