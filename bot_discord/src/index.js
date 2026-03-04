@@ -174,18 +174,44 @@ client.on(Events.InteractionCreate, async interaction => {
         const members = [];
         
         for (const field of embed.fields) {
-          // Extraire les membres depuis les fields de l'embed
-          const lines = field.value.split('\n');
-          for (const line of lines) {
-            // Format: "1️⃣ 🛡️ **Nom** - Role: Tank - Stuff: ..."
-            const match = line.match(/\*\*(.*?)\*\*.*?Role:\s*(.*?)\s*-/);
-            if (match) {
-              const weaponName = match[1].trim();
-              const role = match[2].trim();
-              members.push({ weapon: weaponName, role: role });
+          // Le field.name contient le numéro et le type de rôle (ex: "1. Tank", "2. DPS")
+          // Le field.value contient: "🛡️ **Masse Incube**\n📋 Rôle: Frontline/CC\n🎽 Équipement:..."
+          
+          const fieldName = field.name || '';
+          const fieldValue = field.value || '';
+          
+          // Extraire le type de rôle depuis le nom du field (Tank, DPS, Healer, etc.)
+          const roleTypeMatch = fieldName.match(/\d+\.\s*(\w+)/);
+          if (!roleTypeMatch) continue;
+          
+          const roleType = roleTypeMatch[1]; // Tank, DPS, Healer, Support, Scout
+          
+          // Extraire le nom de l'arme depuis la première ligne du value
+          // Format: "🛡️ **Masse Incube**" ou "⚔️ **Claymore**"
+          const lines = fieldValue.split('\n');
+          const firstLine = lines[0] || '';
+          const weaponMatch = firstLine.match(/[🛡️⚔️💚🏹🔥⚡🗡️🪓🏹]\s*\*\*(.+?)\*\*/);
+          
+          if (weaponMatch) {
+            const weaponName = weaponMatch[1].trim();
+            
+            // Extraire le rôle détaillé depuis la ligne "📋 Rôle: ..."
+            let detailedRole = roleType; // Par défaut, utiliser le type de rôle
+            const roleLineMatch = fieldValue.match(/📋 Rôle:\s*(.+)/);
+            if (roleLineMatch) {
+              detailedRole = roleLineMatch[1].trim();
             }
+            
+            members.push({ 
+              weapon: weaponName, 
+              role: detailedRole,
+              type: roleType // Tank, DPS, Healer, etc.
+            });
+            console.log(`✅ Membre extrait: ${weaponName} (${roleType} - ${detailedRole})`);
           }
         }
+        
+        console.log(`📊 Total membres extraits: ${members.length}`);
 
         if (members.length === 0) {
           await interaction.reply({ content: '❌ Aucun membre détecté dans la composition.', ephemeral: true });
