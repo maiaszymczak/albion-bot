@@ -339,7 +339,15 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         
         const roleType = interaction.customId.split('_')[1];
-        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        // Normaliser: tank -> Tank, dps -> DPS, healer -> Healer, etc.
+        const roleMapping = {
+          'tank': 'Tank',
+          'dps': 'DPS',
+          'healer': 'Healer',
+          'support': 'Support',
+          'scout': 'Scout'
+        };
+        const capitalizedRole = roleMapping[roleType.toLowerCase()] || roleType.charAt(0).toUpperCase() + roleType.slice(1);
         
         // Générer le menu de sélection d'armes avec le rosterId
         const weaponMenu = generateWeaponMenu(capitalizedRole, rosterId);
@@ -500,7 +508,15 @@ client.on(Events.InteractionCreate, async interaction => {
         const parts = interaction.customId.split('_');
         const roleType = parts[2];
         const rosterId = parts[3]; // Extraire le rosterId du customId
-        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        // Normaliser la casse
+        const roleMapping = {
+          'tank': 'Tank',
+          'dps': 'DPS',
+          'healer': 'Healer',
+          'support': 'Support',
+          'scout': 'Scout'
+        };
+        const capitalizedRole = roleMapping[roleType.toLowerCase()] || roleType.charAt(0).toUpperCase() + roleType.slice(1);
         const weaponName = interaction.values[0];
 
         // Cas spécial: arme personnalisée
@@ -699,7 +715,15 @@ client.on(Events.InteractionCreate, async interaction => {
         const parts = interaction.customId.split('_');
         const rosterId = parts[parts.length - 1]; // Dernier élément est le rosterId
         const roleType = interaction.values[0];
-        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        // Normaliser la casse
+        const roleMapping = {
+          'tank': 'Tank',
+          'dps': 'DPS',
+          'healer': 'Healer',
+          'support': 'Support',
+          'scout': 'Scout'
+        };
+        const capitalizedRole = roleMapping[roleType.toLowerCase()] || roleType.charAt(0).toUpperCase() + roleType.slice(1);
         
         const roster = rosterManager.getRoster(rosterId);
         if (!roster) {
@@ -810,7 +834,15 @@ client.on(Events.InteractionCreate, async interaction => {
       // Menu de sélection de rôle pour modification de membre (étape 2: choix du nouveau rôle)
       if (interaction.customId.startsWith('select_role_for_edit')) {
         const newRole = interaction.values[0];
-        const capitalizedRole = newRole.charAt(0).toUpperCase() + newRole.slice(1);
+        // Normaliser la casse
+        const roleMapping = {
+          'tank': 'Tank',
+          'dps': 'DPS',
+          'healer': 'Healer',
+          'support': 'Support',
+          'scout': 'Scout'
+        };
+        const capitalizedRole = roleMapping[newRole.toLowerCase()] || newRole.charAt(0).toUpperCase() + newRole.slice(1);
         
         // Récupérer les infos temporaires
         const userId = interaction.client.tempEditUserId;
@@ -857,7 +889,15 @@ client.on(Events.InteractionCreate, async interaction => {
         const parts = interaction.customId.split('_');
         const roleType = parts[3];
         const rosterId = parts[4]; // Extraire le rosterId du customId
-        const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        // Normaliser la casse
+        const roleMapping = {
+          'tank': 'Tank',
+          'dps': 'DPS',
+          'healer': 'Healer',
+          'support': 'Support',
+          'scout': 'Scout'
+        };
+        const capitalizedRole = roleMapping[roleType.toLowerCase()] || roleType.charAt(0).toUpperCase() + roleType.slice(1);
         const customWeapon = interaction.fields.getTextInputValue('custom_weapon_name');
         const customArmor = interaction.fields.getTextInputValue('custom_armor_name') || null;
 

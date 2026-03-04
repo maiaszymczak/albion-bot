@@ -41,7 +41,13 @@ export function generateSignupEmbed(roster) {
   // Afficher la liste d'attente si elle existe
   if (roster.waitlist && roster.waitlist.length > 0) {
     const waitlistText = roster.waitlist.slice(0, 5)
-      .map((w, i) => `${i + 1}. ${w.username} - ${getRoleIcon(w.role)} ${w.role}`)
+      .map((w, i) => {
+        let equipment = w.weapon;
+        if (w.armor) {
+          equipment += ` + ${w.armor}`;
+        }
+        return `${i + 1}. ${w.username} - ${getRoleIcon(w.role)} ${w.role} - ${equipment}`;
+      })
       .join('\n');
     
     fields.push({
