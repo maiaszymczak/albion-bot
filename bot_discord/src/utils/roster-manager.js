@@ -9,7 +9,14 @@ export class RosterManager {
     this.rosters = new Map();
     this.notificationManager = null; // Sera injecté depuis index.js
     this.autoSaveInterval = null; // Référence vers l'interval
-    this.loadRosters();
+    this.loadingPromise = this.loadRosters(); // Stocker la promesse
+  }
+
+  /**
+   * Attend que les rosters soient chargés
+   */
+  async waitForLoad() {
+    await this.loadingPromise;
   }
 
   /**

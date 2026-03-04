@@ -99,8 +99,14 @@ client.on('shardResume', () => {
 });
 
 // Initialisation du système de notifications
-client.once(Events.ClientReady, (c) => {
+client.once(Events.ClientReady, async (c) => {
   console.log('🔔 Initialisation du système de notifications...');
+  
+  // Attendre que les rosters soient chargés
+  console.log('📂 Chargement des rosters...');
+  await rosterManager.waitForLoad();
+  console.log(`✅ ${rosterManager.rosters.size} roster(s) chargé(s)`);
+  
   const notificationManager = createNotificationManager(c);
   rosterManager.setNotificationManager(notificationManager);
   
