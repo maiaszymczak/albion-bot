@@ -333,11 +333,25 @@ client.on(Events.InteractionCreate, async interaction => {
         // Générer le menu de sélection d'armes
         const weaponMenu = generateWeaponMenu(capitalizedRole);
         
-        await interaction.reply({
+        const response = await interaction.reply({
           content: `Choisissez votre arme pour le rôle **${capitalizedRole}** :`,
           components: [weaponMenu],
-          ephemeral: true
+          ephemeral: true,
+          fetchReply: true
         });
+        
+        // Auto-désactiver après 60 secondes
+        setTimeout(async () => {
+          try {
+            await interaction.editReply({
+              content: '⏱️ Menu expiré (60s)',
+              components: []
+            });
+          } catch (error) {
+            // Ignore si déjà modifié
+          }
+        }, 60000);
+        
         return;
       }
 
@@ -358,11 +372,25 @@ client.on(Events.InteractionCreate, async interaction => {
         
         const editMenu = generateEditRosterMenu(roster);
         
-        await interaction.reply({
+        const response = await interaction.reply({
           content: '⚙️ **Modification du roster**\nChoisissez une action :',
           components: [editMenu],
-          ephemeral: true
+          ephemeral: true,
+          fetchReply: true
         });
+        
+        // Auto-désactiver le menu après 60 secondes
+        setTimeout(async () => {
+          try {
+            await interaction.editReply({
+              content: '⏱️ Menu expiré (60s)',
+              components: []
+            });
+          } catch (error) {
+            // Ignore si le message a déjà été modifié
+          }
+        }, 60000);
+        
         return;
       }
 
@@ -566,6 +594,13 @@ client.on(Events.InteractionCreate, async interaction => {
 
           case 'edit_signup':
             const memberMenu = generateMemberSelectMenu(roster);
+            if (!memberMenu) {
+              await interaction.update({
+                content: '❌ Aucun membre inscrit à modifier',
+                components: []
+              });
+              return;
+            }
             await interaction.update({
               content: '✏️ **Modifier un inscrit**\nSélectionnez le membre :',
               components: [memberMenu]
@@ -574,6 +609,13 @@ client.on(Events.InteractionCreate, async interaction => {
 
           case 'kick_member':
             const kickMenu = generateMemberSelectMenu(roster);
+            if (!kickMenu) {
+              await interaction.update({
+                content: '❌ Aucun membre inscrit à expulser',
+                components: []
+              });
+              return;
+            }
             await interaction.update({
               content: '👢 **Expulser un membre**\nSélectionnez le membre :',
               components: [kickMenu]
