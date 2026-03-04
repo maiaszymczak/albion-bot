@@ -269,7 +269,7 @@ client.on(Events.InteractionCreate, async interaction => {
             components: buttons
           });
         } else {
-          await interaction.reply({ content: `❌ ${result.message}`, ephemeral: true });
+          await interaction.reply({ content: `❌ ${result.error || result.error || result.message || 'Erreur' || 'Une erreur est survenue'}`, ephemeral: true });
         }
         return;
       }
@@ -290,13 +290,43 @@ client.on(Events.InteractionCreate, async interaction => {
             components: buttons
           });
         } else {
-          await interaction.reply({ content: `❌ ${result.message}`, ephemeral: true });
+          await interaction.reply({ content: `❌ ${result.error || result.message || 'Erreur'}`, ephemeral: true });
         }
         return;
       }
 
       // Boutons de sélection de rôle
       if (interaction.customId.startsWith('signup_')) {
+        const rosterId = interaction.message.id;
+        const roster = rosterManager.getRoster(rosterId);
+        
+        if (!roster) {
+          await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
+          return;
+        }
+        
+        // Vérifier si l'utilisateur est déjà inscrit
+        let alreadySignedUp = false;
+        for (const [roleType, signups] of Object.entries(roster.signups)) {
+          if (signups.find(s => s.userId === interaction.user.id)) {
+            alreadySignedUp = true;
+            break;
+          }
+        }
+        
+        // Vérifier aussi dans la waitlist
+        if (roster.waitlist && roster.waitlist.find(w => w.userId === interaction.user.id)) {
+          alreadySignedUp = true;
+        }
+        
+        if (alreadySignedUp) {
+          await interaction.reply({ 
+            content: '❌ Vous êtes déjà inscrit ! Désinscrivez-vous d\'abord pour changer de rôle.', 
+            ephemeral: true 
+          });
+          return;
+        }
+        
         const roleType = interaction.customId.split('_')[1];
         const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
         
@@ -358,7 +388,7 @@ client.on(Events.InteractionCreate, async interaction => {
             ephemeral: false
           });
         } else {
-          await interaction.reply({ content: `❌ ${result.message}`, ephemeral: true });
+          await interaction.reply({ content: `❌ ${result.error || result.message || 'Erreur'}`, ephemeral: true });
         }
         return;
       }
@@ -484,7 +514,7 @@ client.on(Events.InteractionCreate, async interaction => {
           });
         } else {
           await interaction.update({ 
-            content: `❌ ${result.message}`, 
+            content: `❌ ${result.error || result.message || 'Erreur'}`, 
             components: [] 
           });
         }
@@ -603,7 +633,7 @@ client.on(Events.InteractionCreate, async interaction => {
           });
         } else {
           await interaction.update({
-            content: `❌ ${result.message}`,
+            content: `❌ ${result.error || result.message || 'Erreur'}`,
             components: []
           });
         }
@@ -660,7 +690,7 @@ client.on(Events.InteractionCreate, async interaction => {
             });
           } else {
             await interaction.update({
-              content: `❌ ${result.message}`,
+              content: `❌ ${result.error || result.message || 'Erreur'}`,
               components: []
             });
           }
@@ -745,7 +775,7 @@ client.on(Events.InteractionCreate, async interaction => {
           });
         } else {
           await interaction.reply({ 
-            content: `❌ ${result.message}`, 
+            content: `❌ ${result.error || result.message || 'Erreur'}`, 
             ephemeral: true 
           });
         }
@@ -798,7 +828,7 @@ client.on(Events.InteractionCreate, async interaction => {
           });
         } else {
           await interaction.reply({
-            content: `❌ ${result.message}`,
+            content: `❌ ${result.error || result.message || 'Erreur'}`,
             ephemeral: true
           });
         }
@@ -861,7 +891,7 @@ client.on(Events.InteractionCreate, async interaction => {
           });
         } else {
           await interaction.reply({
-            content: `❌ ${result.message}`,
+            content: `❌ ${result.error || result.message || 'Erreur'}`,
             ephemeral: true
           });
         }
