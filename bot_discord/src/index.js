@@ -506,37 +506,86 @@ client.on(Events.InteractionCreate, async interaction => {
           return;
         }
 
-        // Enregistrer l'inscription
-        const result = rosterManager.signup(
-          rosterId,
-          interaction.user.id,
-          interaction.user.username,
-          capitalizedRole,
-          weaponName
-        );
+        // Vérifier si on est en mode édition de membre
+        const isEditMode = interaction.client.tempEditUserId && 
+                           interaction.client.tempEditRosterId === rosterId;
 
-        if (result.success) {
-          // Mettre à jour le message du roster
-          const embed = generateSignupEmbed(roster);
-          const isCreator = roster.creatorId === interaction.user.id;
-          const buttons = generateSignupButtons(roster, isCreator);
+        if (isEditMode) {
+          // Mode édition: modifier l'inscription existante
+          const userId = interaction.client.tempEditUserId;
+          const oldRole = interaction.client.tempEditOldRole;
+          const newRole = interaction.client.tempEditNewRole || capitalizedRole;
+          
+          const result = rosterManager.changeRole(
+            rosterId,
+            interaction.user.id, // creatorId
+            userId,              // memberId
+            oldRole,
+            newRole,
+            weaponName
+          );
 
-          const channel = interaction.channel;
-          const rosterMessage = await channel.messages.fetch(rosterId);
-          await rosterMessage.edit({
-            embeds: [embed],
-            components: buttons
-          });
+          // Nettoyer les variables temporaires
+          delete interaction.client.tempEditUserId;
+          delete interaction.client.tempEditOldRole;
+          delete interaction.client.tempEditRosterId;
+          delete interaction.client.tempEditNewRole;
 
-          await interaction.update({ 
-            content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${weaponName}**!`, 
-            components: [] 
-          });
+          if (result.success) {
+            const embed = generateSignupEmbed(roster);
+            const isCreator = roster.creatorId === interaction.user.id;
+            const buttons = generateSignupButtons(roster, isCreator);
+
+            const channel = interaction.channel;
+            const rosterMessage = await channel.messages.fetch(rosterId);
+            await rosterMessage.edit({
+              embeds: [embed],
+              components: buttons
+            });
+
+            await interaction.update({ 
+              content: `✅ Membre modifié avec succès : **${newRole}** avec **${weaponName}**!`, 
+              components: [] 
+            });
+          } else {
+            await interaction.update({ 
+              content: `❌ ${result.error || result.message || 'Erreur'}`, 
+              components: [] 
+            });
+          }
         } else {
-          await interaction.update({ 
-            content: `❌ ${result.error || result.message || 'Erreur'}`, 
-            components: [] 
-          });
+          // Mode inscription normale
+          const result = rosterManager.signup(
+            rosterId,
+            interaction.user.id,
+            interaction.user.username,
+            capitalizedRole,
+            weaponName
+          );
+
+          if (result.success) {
+            // Mettre à jour le message du roster
+            const embed = generateSignupEmbed(roster);
+            const isCreator = roster.creatorId === interaction.user.id;
+            const buttons = generateSignupButtons(roster, isCreator);
+
+            const channel = interaction.channel;
+            const rosterMessage = await channel.messages.fetch(rosterId);
+            await rosterMessage.edit({
+              embeds: [embed],
+              components: buttons
+            });
+
+            await interaction.update({ 
+              content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${weaponName}**!`, 
+              components: [] 
+            });
+          } else {
+            await interaction.update({ 
+              content: `❌ ${result.error || result.message || 'Erreur'}`, 
+              components: [] 
+            });
+          }
         }
         return;
       }
@@ -569,7 +618,7 @@ client.on(Events.InteractionCreate, async interaction => {
             break;
 
           case 'add_slot':
-            const addRoleMenu = generateRoleSelectMenu();
+            const addRoleMenu = generateRoleSelectMenu(rosterId);
             await interaction.update({
               content: '➕ **Ajouter un slot**\nSélectionnez le rôle :',
               components: [addRoleMenu]
@@ -577,7 +626,7 @@ client.on(Events.InteractionCreate, async interaction => {
             break;
 
           case 'remove_slot':
-            const removeRoleMenu = generateRoleSelectMenu();
+            const removeRoleMenu = generateRoleSelectMenu(rosterId);
             await interaction.update({
               content: '➖ **Retirer un slot**\nSélectionnez le rôle :',
               components: [removeRoleMenu]
@@ -618,27 +667,18 @@ client.on(Events.InteractionCreate, async interaction => {
       }
 
       // Menu de sélection de rôle pour ajout/retrait de slot
-      if (interaction.customId === 'select_role_to_modify') {
+      if (interaction.customId.startsWith('select_role_to_modify')) {
+        const parts = interaction.customId.split('_');
+        const rosterId = parts[parts.length - 1]; // Dernier élément est le rosterId
         const roleType = interaction.values[0];
         const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
         
-        const channel = interaction.channel;
-        const messages = await channel.messages.fetch({ limit: 10 });
-        let rosterId = null;
-        
-        for (const msg of messages.values()) {
-          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
-            rosterId = msg.id;
-            break;
-          }
-        }
-
-        if (!rosterId) {
+        const roster = rosterManager.getRoster(rosterId);
+        if (!roster) {
           await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
           return;
         }
 
-        const roster = rosterManager.getRoster(rosterId);
         const currentQuota = roster.quotas[capitalizedRole] || 0;
 
         // Déterminer si c'est un ajout ou retrait selon le message précédent
@@ -655,6 +695,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = updatedRoster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(updatedRoster, isCreator);
 
+          const channel = interaction.channel;
           const rosterMessage = await channel.messages.fetch(rosterId);
           await rosterMessage.edit({
             embeds: [embed],
@@ -675,7 +716,10 @@ client.on(Events.InteractionCreate, async interaction => {
       }
 
       // Menu de sélection de membre pour modification/kick
-      if (interaction.customId === 'select_member_to_modify') {
+      // Menu de sélection de membre pour modification/kick
+      if (interaction.customId.startsWith('select_member_to_modify')) {
+        const parts = interaction.customId.split('_');
+        const rosterId = parts[parts.length - 1]; // Dernier élément est le rosterId
         const value = interaction.values[0];
         
         if (value === 'none') {
@@ -686,18 +730,8 @@ client.on(Events.InteractionCreate, async interaction => {
         const [userId, oldRole] = value.split('_');
         const isKick = interaction.message.content.includes('Expulser');
 
-        const channel = interaction.channel;
-        const messages = await channel.messages.fetch({ limit: 10 });
-        let rosterId = null;
-        
-        for (const msg of messages.values()) {
-          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
-            rosterId = msg.id;
-            break;
-          }
-        }
-
-        if (!rosterId) {
+        const roster = rosterManager.getRoster(rosterId);
+        if (!roster) {
           await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
           return;
         }
@@ -707,11 +741,11 @@ client.on(Events.InteractionCreate, async interaction => {
           const result = rosterManager.kick(rosterId, interaction.user.id, userId);
           
           if (result.success) {
-            const roster = rosterManager.getRoster(rosterId);
             const embed = generateSignupEmbed(roster);
             const isCreator = roster.creatorId === interaction.user.id;
             const buttons = generateSignupButtons(roster, isCreator);
 
+            const channel = interaction.channel;
             const rosterMessage = await channel.messages.fetch(rosterId);
             await rosterMessage.edit({
               embeds: [embed],
@@ -729,18 +763,50 @@ client.on(Events.InteractionCreate, async interaction => {
             });
           }
         } else {
-          // Modifier le membre - afficher menu pour choisir nouveau rôle et arme
-          const roleMenu = generateRoleSelectMenu();
+          // Modifier le membre - afficher menu pour choisir nouveau rôle
+          const roleMenu = generateRoleSelectMenu(rosterId, 'edit');
           
-          // Stocker temporairement l'userId dans le customId du prochain menu
+          // Stocker temporairement l'userId et oldRole dans le client
+          interaction.client.tempEditUserId = userId;
+          interaction.client.tempEditOldRole = oldRole;
+          interaction.client.tempEditRosterId = rosterId;
+          
           await interaction.update({
             content: `✏️ **Modifier le membre**\nChoisissez le nouveau rôle :`,
             components: [roleMenu]
           });
-          
-          // Stocker l'userId dans une variable temporaire (limitation: utiliser un Map global ou le message)
-          interaction.client.tempEditUserId = userId;
         }
+        return;
+      }
+
+      // Menu de sélection de rôle pour modification de membre (étape 2: choix du nouveau rôle)
+      if (interaction.customId.startsWith('select_role_for_edit')) {
+        const newRole = interaction.values[0];
+        const capitalizedRole = newRole.charAt(0).toUpperCase() + newRole.slice(1);
+        
+        // Récupérer les infos temporaires
+        const userId = interaction.client.tempEditUserId;
+        const oldRole = interaction.client.tempEditOldRole;
+        const rosterId = interaction.client.tempEditRosterId;
+        
+        if (!userId || !rosterId) {
+          await interaction.update({ 
+            content: '❌ Session expirée, veuillez recommencer', 
+            components: [] 
+          });
+          return;
+        }
+        
+        // Afficher le menu d'armes
+        const weaponMenu = generateWeaponMenu(capitalizedRole, rosterId);
+        
+        // Stocker le nouveau rôle aussi
+        interaction.client.tempEditNewRole = capitalizedRole;
+        
+        await interaction.update({
+          content: `✏️ **Modifier le membre**\nChoisissez la nouvelle arme pour **${capitalizedRole}** :`,
+          components: [weaponMenu]
+        });
         return;
       }
 

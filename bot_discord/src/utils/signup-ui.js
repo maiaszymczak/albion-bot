@@ -306,7 +306,7 @@ export function generateEditRosterMenu(roster) {
 /**
  * Génère le menu de sélection de rôle pour modification
  */
-export function generateRoleSelectMenu() {
+export function generateRoleSelectMenu(rosterId = '', purpose = 'slot') {
   const roles = ['Tank', 'DPS', 'Healer', 'Support', 'Scout'];
   const options = roles.map(role => ({
     label: `${roleIcons[role]} ${role}`,
@@ -314,8 +314,21 @@ export function generateRoleSelectMenu() {
     emoji: roleIcons[role]
   }));
   
+  let customId;
+  if (purpose === 'edit') {
+    // Pour la modification de membre
+    customId = rosterId 
+      ? `select_role_for_edit_${rosterId}`
+      : 'select_role_for_edit';
+  } else {
+    // Pour l'ajout/retrait de slots
+    customId = rosterId 
+      ? `select_role_to_modify_${rosterId}`
+      : 'select_role_to_modify';
+  }
+  
   const menu = new StringSelectMenuBuilder()
-    .setCustomId('select_role_to_modify')
+    .setCustomId(customId)
     .setPlaceholder('Sélectionnez un rôle')
     .addOptions(options);
   
@@ -347,8 +360,12 @@ export function generateMemberSelectMenu(roster) {
     });
   }
   
+  const customId = roster.id 
+    ? `select_member_to_modify_${roster.id}`
+    : 'select_member_to_modify';
+  
   const menu = new StringSelectMenuBuilder()
-    .setCustomId('select_member_to_modify')
+    .setCustomId(customId)
     .setPlaceholder('Sélectionnez un membre')
     .addOptions(options.slice(0, 25)); // Limite Discord
   
