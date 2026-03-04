@@ -298,12 +298,17 @@ client.on(Events.InteractionCreate, async interaction => {
       // Boutons de sélection de rôle
       if (interaction.customId.startsWith('signup_')) {
         const rosterId = interaction.message.id;
+        console.log(`🔍 Recherche roster ID: ${rosterId}`);
         const roster = rosterManager.getRoster(rosterId);
         
         if (!roster) {
+          console.log(`❌ Roster ${rosterId} introuvable dans la Map`);
+          console.log(`📋 Rosters disponibles:`, Array.from(rosterManager.rosters.keys()));
           await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
           return;
         }
+        
+        console.log(`✅ Roster trouvé: ${roster.composition.name}`);
         
         // Vérifier si l'utilisateur est déjà inscrit
         let alreadySignedUp = false;
