@@ -107,3 +107,36 @@ export function createEditWeaponModal(userId, currentWeapon) {
 
   return modal;
 }
+
+/**
+ * Crée un modal pour le feedback
+ */
+export function createFeedbackModal() {
+  const modal = new ModalBuilder()
+    .setCustomId('feedback_modal')
+    .setTitle('Donner votre avis sur l\'événement');
+
+  const ratingInput = new TextInputBuilder()
+    .setCustomId('feedback_rating')
+    .setLabel('Note (1-5)')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('Entre 1 et 5')
+    .setRequired(true)
+    .setMinLength(1)
+    .setMaxLength(1);
+
+  const commentInput = new TextInputBuilder()
+    .setCustomId('feedback_comment')
+    .setLabel('Commentaire (optionnel)')
+    .setStyle(TextInputStyle.Paragraph)
+    .setPlaceholder('Votre retour sur l\'événement...')
+    .setRequired(false)
+    .setMaxLength(500);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(ratingInput),
+    new ActionRowBuilder().addComponents(commentInput)
+  );
+
+  return modal;
+}

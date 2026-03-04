@@ -1,26 +1,51 @@
 // Système de gestion des inscriptions pour les compositions
-// Stocke les rosters actifs en mémoire
+// Stocke les rosters actifs en mémoire et sur disque
+
+import { persistence } from './persistence.js';
 
 export class RosterManager {
   constructor() {
     // Map<messageId, RosterData>
     this.rosters = new Map();
+    this.loadRosters();
+    
+    // Auto-save toutes les 5 minutes
+    setInterval(() => this.saveRosters(), 5 * 60 * 1000);
+  }
+
+  /**
+   * Charge les rosters depuis le disque
+   */
+  async loadRosters() {
+    this.rosters = await persistence.loadRosters();
+  }
+
+  /**
+   * Sauvegarde les rosters sur le disque
+   */
+  async saveRosters() {
+    await persistence.saveRosters(this.rosters);
   }
 
   /**
    * Crée un nouveau roster
    */
-  createRoster(messageId, creatorId, composition) {
+  createRoster(messageId, creatorId, composition, scheduledDate = null) {
     const rosterData = {
       creatorId,
       composition,
       signups: {}, // { roleType: [{ userId, username, weapon }] }
+      waitlist: [], // [{ userId, username, role, weapon }]
       quotas: this.calculateQuotas(composition),
-      status: 'open', // 'open', 'closed', 'full'
-      createdAt: new Date()
+      status: 'open', // 'open', 'closed', 'full', 'completed'
+      createdAt: new Date(),
+      scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
+      notificationsSent: false,
+      feedback: [] // [{ userId, rating, comment }]
     };
     
     this.rosters.set(messageId, rosterData);
+    this.saveRosters(); // Sauvegarde immédiate
     return rosterData;
   }
 
@@ -62,7 +87,7 @@ export class RosterManager {
   /**
    * Inscrit un joueur à un rôle
    */
-  signup(messageId, userId, username, role, weapon) {
+  signup(messageId, userId, username, role, weapon, guildId) {
     const roster = this.rosters.get(messageId);
     if (!roster) return { success: false, error: 'Roster introuvable' };
     if (roster.status === 'closed') return { success: false, error: 'Inscriptions fermées' };
@@ -80,7 +105,10 @@ export class RosterManager {
     const quota = roster.quotas[role] || 0;
     
     if (currentCount >= quota) {
-      return { success: false, error: `Plus de places disponibles pour ${role}` };
+      // Ajouter à la liste d'attente
+      roster.waitlist.push({ userId, username, role, weapon, timestamp: Date.now() });
+      this.saveRosters();
+      return { success: true, waitlisted: true, message: 'Ajouté à la liste d\'attente' };
     }
 
     // Ajouter l'inscription
@@ -88,7 +116,12 @@ export class RosterManager {
       roster.signups[role] = [];
     }
     
-    roster.signups[role].push({ userId, username, weapon });
+    roster.signups[role].push({ userId, username, weapon, timestamp: Date.now() });
+
+    // Enregistrer la participation dans les stats
+    if (guildId) {
+      persistence.recordParticipation(userId, username, role, guildId, messageId);
+    }
 
     // Vérifier si le roster est complet
     const totalSignups = Object.values(roster.signups).reduce((sum, arr) => sum + arr.length, 0);
@@ -98,6 +131,7 @@ export class RosterManager {
       roster.status = 'full';
     }
 
+    this.saveRosters();
     return { success: true, roster };
   }
 
@@ -108,16 +142,66 @@ export class RosterManager {
     const roster = this.rosters.get(messageId);
     if (!roster) return { success: false, error: 'Roster introuvable' };
 
+    // Trouver et retirer le joueur
+    let removed = false;
+    let removedRole = null;
     for (const [roleType, signups] of Object.entries(roster.signups)) {
       const index = signups.findIndex(s => s.userId === userId);
       if (index !== -1) {
         signups.splice(index, 1);
-        roster.status = 'open'; // Rouvrir si c'était plein
-        return { success: true, roster };
+        removed = true;
+        removedRole = roleType;
+        break;
       }
     }
 
-    return { success: false, error: 'Vous n\'êtes pas inscrit' };
+    if (!removed) {
+      // Vérifier dans la waitlist
+      if (roster.waitlist) {
+        const waitlistIndex = roster.waitlist.findIndex(w => w.userId === userId);
+        if (waitlistIndex !== -1) {
+          roster.waitlist.splice(waitlistIndex, 1);
+          this.saveRosters();
+          return { success: true, message: 'Retiré de la liste d\'attente', roster };
+        }
+      }
+      return { success: false, error: 'Vous n\'êtes pas inscrit' };
+    }
+
+    // Promouvoir quelqu'un de la waitlist
+    const promoted = this.promoteFromWaitlist(roster, removedRole);
+
+    // Mettre à jour le status
+    roster.status = 'open';
+    
+    this.saveRosters();
+    return { success: true, roster, promoted };
+  }
+
+  /**
+   * Promouvoir quelqu'un de la waitlist
+   */
+  promoteFromWaitlist(roster, roleType) {
+    if (!roster.waitlist || roster.waitlist.length === 0) return null;
+
+    // Trouver le premier dans la waitlist pour ce rôle
+    const index = roster.waitlist.findIndex(w => w.role === roleType);
+    if (index === -1) return null;
+
+    const promoted = roster.waitlist.splice(index, 1)[0];
+    
+    if (!roster.signups[roleType]) {
+      roster.signups[roleType] = [];
+    }
+    
+    roster.signups[roleType].push({
+      userId: promoted.userId,
+      username: promoted.username,
+      weapon: promoted.weapon,
+      timestamp: Date.now()
+    });
+
+    return promoted;
   }
 
   /**
@@ -172,6 +256,7 @@ export class RosterManager {
     
     roster.quotas = { ...roster.quotas, ...newQuotas };
     
+    this.saveRosters();
     return { success: true, message: 'Quotas mis à jour' };
   }
   
@@ -226,7 +311,60 @@ export class RosterManager {
       timestamp: Date.now()
     });
     
+    this.saveRosters();
     return { success: true, message: `${username} déplacé de ${oldRole} à ${newRole}` };
+  }
+
+  /**
+   * Marque le roster comme terminé
+   */
+  completeRoster(messageId, requesterId) {
+    const roster = this.rosters.get(messageId);
+    
+    if (!roster) {
+      return { success: false, message: 'Roster introuvable' };
+    }
+    
+    if (roster.creatorId !== requesterId) {
+      return { success: false, message: 'Seul le créateur peut marquer comme terminé' };
+    }
+    
+    roster.status = 'completed';
+    this.saveRosters();
+    
+    return { success: true, roster };
+  }
+
+  /**
+   * Ajoute un feedback
+   */
+  addFeedback(messageId, userId, username, rating, comment = '') {
+    const roster = this.rosters.get(messageId);
+    
+    if (!roster) {
+      return { success: false, message: 'Roster introuvable' };
+    }
+    
+    if (!roster.feedback) {
+      roster.feedback = [];
+    }
+    
+    // Vérifier si déjà donné feedback
+    const existing = roster.feedback.find(f => f.userId === userId);
+    if (existing) {
+      return { success: false, message: 'Vous avez déjà donné votre avis' };
+    }
+    
+    roster.feedback.push({
+      userId,
+      username,
+      rating,
+      comment,
+      timestamp: Date.now()
+    });
+    
+    this.saveRosters();
+    return { success: true };
   }
 
   /**
@@ -240,19 +378,77 @@ export class RosterManager {
    * Supprime un roster
    */
   deleteRoster(messageId) {
-    return this.rosters.delete(messageId);
+    const deleted = this.rosters.delete(messageId);
+    if (deleted) {
+      this.saveRosters();
+    }
+    return deleted;
   }
 
   /**
-   * Nettoie les vieux rosters (> 24h)
+   * Récupère tous les rosters actifs
+   */
+  getAllRosters() {
+    return Array.from(this.rosters.entries()).map(([id, roster]) => ({
+      id,
+      ...roster
+    }));
+  }
+
+  /**
+   * Récupère les rosters d'une guilde
+   */
+  getGuildRosters(guildId) {
+    return this.getAllRosters().filter(r => r.guildId === guildId);
+  }
+
+  /**
+   * Clone un roster
+   */
+  cloneRoster(sourceMessageId, newMessageId, creatorId) {
+    const source = this.rosters.get(sourceMessageId);
+    
+    if (!source) {
+      return { success: false, message: 'Roster source introuvable' };
+    }
+    
+    const cloned = {
+      ...source,
+      createdAt: new Date(),
+      signups: {},
+      waitlist: [],
+      status: 'open',
+      creatorId,
+      notificationsSent: false,
+      feedback: []
+    };
+    
+    this.rosters.set(newMessageId, cloned);
+    this.saveRosters();
+    
+    return { success: true, roster: cloned };
+  }
+
+  /**
+   * Nettoie les vieux rosters (> 7 jours pour les terminés, > 30 jours pour les autres)
    */
   cleanup() {
     const now = new Date();
+    let cleaned = 0;
+    
     for (const [messageId, roster] of this.rosters.entries()) {
       const age = now - roster.createdAt;
-      if (age > 24 * 60 * 60 * 1000) { // 24h
+      const maxAge = roster.status === 'completed' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
+      
+      if (age > maxAge) {
         this.rosters.delete(messageId);
+        cleaned++;
       }
+    }
+    
+    if (cleaned > 0) {
+      this.saveRosters();
+      console.log(`🧹 ${cleaned} rosters nettoyés`);
     }
   }
 }

@@ -6,7 +6,7 @@ import { readdirSync } from 'fs';
 import express from 'express';
 import { rosterManager } from './utils/roster-manager.js';
 import { generateSignupEmbed, generateSignupButtons, generateWeaponMenu, generateEditRosterMenu, generateRoleSelectMenu, generateMemberSelectMenu } from './utils/signup-ui.js';
-import { createCustomWeaponModal, createEditQuotasModal, createEditWeaponModal } from './utils/modal-handler.js';
+import { createCustomWeaponModal, createEditQuotasModal, createEditWeaponModal, createFeedbackModal } from './utils/modal-handler.js';
 
 dotenv.config();
 
@@ -97,8 +97,22 @@ client.on('shardResume', () => {
   console.log('✅ Connexion rétablie au gateway Discord');
 });
 
-// Événement: Interaction (commandes slash, boutons, menus)
+// Événement: Interaction (commandes slash, boutons, menus, autocomplete)
 client.on(Events.InteractionCreate, async interaction => {
+  // ==================== AUTOCOMPLETE ====================
+  if (interaction.isAutocomplete()) {
+    const command = interaction.client.commands.get(interaction.commandName);
+    
+    if (command && command.autocomplete) {
+      try {
+        await command.autocomplete(interaction);
+      } catch (error) {
+        console.error(`❌ Erreur autocomplete ${interaction.commandName}:`, error);
+      }
+    }
+    return;
+  }
+
   // ==================== COMMANDES SLASH ====================
   if (interaction.isChatInputCommand()) {
     const command = interaction.client.commands.get(interaction.commandName);
@@ -252,6 +266,101 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         
         const editMenu = generateEditRosterMenu(roster);
+        
+        await interaction.reply({
+          content: '⚙️ **Modification du roster**\nChoisissez une action :',
+          components: [editMenu],
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Bouton "Marquer terminé"
+      if (interaction.customId === 'complete_roster') {
+        const rosterId = interaction.message.id;
+        const result = rosterManager.completeRoster(rosterId, interaction.user.id);
+        
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+          
+          await interaction.update({
+            embeds: [embed],
+            components: buttons
+          });
+          
+          // Envoyer message de félicitations
+          await interaction.followUp({
+            content: `✅ **Événement terminé !**\n\nMerci à tous les participants ! N'hésitez pas à donner votre avis avec le bouton ⭐`,
+            ephemeral: false
+          });
+        } else {
+          await interaction.reply({ content: `❌ ${result.message}`, ephemeral: true });
+        }
+        return;
+      }
+
+      // Bouton "Donner mon avis"
+      if (interaction.customId === 'add_feedback') {
+        const modal = createFeedbackModal();
+        await interaction.showModal(modal);
+        return;
+      }
+
+      // Bouton "Aide"
+      if (interaction.customId === 'roster_help') {
+        const helpEmbed = {
+          color: 0x3498db,
+          title: '❓ Aide - Système d\'inscription',
+          description: 'Voici comment utiliser le système d\'inscriptions pour les événements.',
+          fields: [
+            {
+              name: '📝 S\'inscrire',
+              value: '1. Cliquez sur le bouton de votre rôle (Tank, DPS, etc.)\n2. Sélectionnez votre arme dans le menu\n3. Validez votre inscription',
+              inline: false
+            },
+            {
+              name: '❌ Se désinscrire',
+              value: 'Cliquez sur "Se désinscrire" pour retirer votre inscription.',
+              inline: false
+            },
+            {
+              name: '⏳ Liste d\'attente',
+              value: 'Si le roster est complet, vous serez ajouté à la liste d\'attente. Vous serez automatiquement promu si une place se libère.',
+              inline: false
+            },
+            {
+              name: '✏️ Pour les créateurs',
+              value: '• **Modifier** : Ajuster quotas, déplacer membres, expulser\n• **Marquer terminé** : Marque l\'événement comme fini\n• **Fermer** : Ferme les inscriptions',
+              inline: false
+            },
+            {
+              name: '📊 Commandes utiles',
+              value: '• `/stats me` : Vos statistiques\n• `/roster list` : Liste des rosters actifs\n• `/template save` : Sauvegarder une compo',
+              inline: false
+            }
+          ],
+          footer: {
+            text: 'Bot Albion Online - Système d\'inscriptions'
+          }
+        };
+        
+        await interaction.reply({ embeds: [helpEmbed], ephemeral: true });
+        return;
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur lors du traitement du bouton:', error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
+      }
+    }
+    return;
+  }
         
         await interaction.reply({
           content: '⚙️ **Modification du roster**\nChoisissez une action :',
@@ -572,7 +681,8 @@ client.on(Events.InteractionCreate, async interaction => {
           interaction.user.id,
           interaction.user.username,
           capitalizedRole,
-          customWeapon
+          customWeapon,
+          interaction.guild?.id
         );
 
         if (result.success) {
@@ -653,6 +763,69 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
       }
 
+      // Modal feedback
+      if (interaction.customId === 'feedback_modal') {
+        const ratingStr = interaction.fields.getTextInputValue('feedback_rating');
+        const comment = interaction.fields.getTextInputValue('feedback_comment') || '';
+        
+        const rating = parseInt(ratingStr);
+        if (isNaN(rating) || rating < 1 || rating > 5) {
+          await interaction.reply({
+            content: '❌ La note doit être entre 1 et 5.',
+            ephemeral: true
+          });
+          return;
+        }
+
+        const channel = interaction.channel;
+        const messages = await channel.messages.fetch({ limit: 10 });
+        let rosterId = null;
+        
+        for (const msg of messages.values()) {
+          if (msg.embeds[0]?.title?.includes('Inscriptions') && msg.embeds[0]?.description?.includes('Terminé')) {
+            rosterId = msg.id;
+            break;
+          }
+        }
+
+        if (!rosterId) {
+          await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
+          return;
+        }
+
+        const result = rosterManager.addFeedback(
+          rosterId,
+          interaction.user.id,
+          interaction.user.username,
+          rating,
+          comment
+        );
+
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          await interaction.reply({
+            content: `✅ Merci pour votre avis ! ${'⭐'.repeat(rating)}`,
+            ephemeral: true
+          });
+        } else {
+          await interaction.reply({
+            content: `❌ ${result.message}`,
+            ephemeral: true
+          });
+        }
+        return;
+      }
+
     } catch (error) {
       console.error('❌ Erreur lors du traitement du modal:', error);
       if (interaction.replied || interaction.deferred) {
@@ -690,7 +863,8 @@ client.on(Events.InteractionCreate, async interaction => {
           interaction.user.id,
           interaction.user.username,
           capitalizedRole,
-          weaponName
+          weaponName,
+          interaction.guild?.id
         );
 
         if (result.success) {

@@ -15,11 +15,14 @@ export function generateSignupEmbed(roster) {
     const count = signups.length;
     const icon = roleIcons[roleType] || '⚔️';
     
-    let value = '';
+    // Barre de progression visuelle
+    const progressBar = generateProgressBar(count, quota);
+    
+    let value = `${progressBar}\n`;
     if (signups.length > 0) {
-      value = signups.map(s => `• ${s.username} - ${s.weapon}`).join('\n');
+      value += signups.map(s => `• ${s.username} - ${s.weapon}`).join('\n');
     } else {
-      value = '_(Aucune inscription)_';
+      value += '_(Aucune inscription)_';
     }
     
     fields.push({
@@ -29,29 +32,82 @@ export function generateSignupEmbed(roster) {
     });
   }
   
+  // Afficher la liste d'attente si elle existe
+  if (roster.waitlist && roster.waitlist.length > 0) {
+    const waitlistText = roster.waitlist.slice(0, 5)
+      .map((w, i) => `${i + 1}. ${w.username} - ${getRoleIcon(w.role)} ${w.role}`)
+      .join('\n');
+    
+    fields.push({
+      name: `⏳ Liste d'attente (${roster.waitlist.length})`,
+      value: waitlistText + (roster.waitlist.length > 5 ? `\n_... et ${roster.waitlist.length - 5} autre(s)_` : ''),
+      inline: false
+    });
+  }
+  
   const totalSignups = Object.values(roster.signups).reduce((sum, arr) => sum + arr.length, 0);
   const totalQuota = Object.values(roster.quotas).reduce((sum, q) => sum + q, 0);
   
   let statusEmoji = '🟢';
   let statusText = 'Ouvert';
+  let color = 0x2ecc71; // Vert
+  
   if (roster.status === 'closed') {
     statusEmoji = '🔴';
     statusText = 'Fermé';
+    color = 0xe74c3c; // Rouge
   } else if (roster.status === 'full') {
     statusEmoji = '🟡';
     statusText = 'Complet';
+    color = 0xf39c12; // Orange
+  } else if (roster.status === 'completed') {
+    statusEmoji = '✅';
+    statusText = 'Terminé';
+    color = 0x95a5a6; // Gris
+  }
+  
+  let description = `${statusEmoji} **Status:** ${statusText}\n👥 **Inscrits:** ${totalSignups}/${totalQuota}`;
+  
+  // Ajouter la date prévue si elle existe
+  if (roster.scheduledDate) {
+    const timestamp = Math.floor(roster.scheduledDate.getTime() / 1000);
+    description += `\n⏰ **Prévu pour:** <t:${timestamp}:F> (<t:${timestamp}:R>)`;
+  }
+  
+  // Afficher feedback si terminé
+  if (roster.status === 'completed' && roster.feedback && roster.feedback.length > 0) {
+    const avgRating = roster.feedback.reduce((sum, f) => sum + f.rating, 0) / roster.feedback.length;
+    description += `\n⭐ **Note moyenne:** ${avgRating.toFixed(1)}/5 (${roster.feedback.length} avis)`;
   }
   
   return {
-    color: roster.status === 'open' ? 0x2ecc71 : (roster.status === 'full' ? 0xf39c12 : 0xe74c3c),
+    color,
     title: `📋 Inscriptions - ${roster.composition.name || 'Composition'}`,
-    description: `${statusEmoji} **Status:** ${statusText}\n👥 **Inscrits:** ${totalSignups}/${totalQuota}`,
+    description,
     fields,
     footer: {
-      text: 'Cliquez sur un bouton pour vous inscrire • Les inscriptions restent ouvertes 24h'
+      text: roster.status === 'completed' ? 'Événement terminé' : 'Cliquez sur un bouton pour vous inscrire'
     },
     timestamp: new Date().toISOString()
   };
+}
+
+/**
+ * Génère une barre de progression visuelle
+ */
+function generateProgressBar(current, max) {
+  const percentage = Math.min(current / max, 1);
+  const filled = Math.round(percentage * 10);
+  const empty = 10 - filled;
+  
+  return '🟩'.repeat(filled) + '⬜'.repeat(empty) + ` ${current}/${max}`;
+}
+
+/**
+ * Récupère l'icône d'un rôle
+ */
+function getRoleIcon(role) {
+  return roleIcons[role] || '⚔️';
 }
 
 /**
@@ -91,7 +147,35 @@ export function generateSignupButtons(roster, isCreator = false) {
         .setLabel('✏️ Modifier')
         .setStyle(ButtonStyle.Secondary)
     );
+    
+    // Bouton pour marquer comme terminé
+    if (roster.status !== 'completed') {
+      buttons.push(
+        new ButtonBuilder()
+          .setCustomId('complete_roster')
+          .setLabel('✅ Marquer terminé')
+          .setStyle(ButtonStyle.Success)
+      );
+    }
   }
+  
+  // Bouton feedback (si terminé)
+  if (roster.status === 'completed') {
+    buttons.push(
+      new ButtonBuilder()
+        .setCustomId('add_feedback')
+        .setLabel('⭐ Donner mon avis')
+        .setStyle(ButtonStyle.Primary)
+    );
+  }
+  
+  // Bouton aide
+  buttons.push(
+    new ButtonBuilder()
+      .setCustomId('roster_help')
+      .setLabel('❓')
+      .setStyle(ButtonStyle.Secondary)
+  );
   
   buttons.push(
     new ButtonBuilder()
