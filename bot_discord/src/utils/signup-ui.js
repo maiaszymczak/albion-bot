@@ -20,7 +20,13 @@ export function generateSignupEmbed(roster) {
     
     let value = `${progressBar}\n`;
     if (signups.length > 0) {
-      value += signups.map(s => `• ${s.username} - ${s.weapon}`).join('\n');
+      value += signups.map(s => {
+        let equipment = s.weapon;
+        if (s.armor) {
+          equipment += ` + ${s.armor}`;
+        }
+        return `• ${s.username} - ${equipment}`;
+      }).join('\n');
     } else {
       value += '_(Aucune inscription)_';
     }

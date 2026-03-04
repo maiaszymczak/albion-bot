@@ -1,7 +1,7 @@
 import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
 
 /**
- * Crée un modal pour la saisie manuelle d'une arme
+ * Crée un modal pour la saisie manuelle d'une arme et armure
  */
 export function createCustomWeaponModal(roleType, rosterId = '') {
   const customId = rosterId 
@@ -10,18 +10,27 @@ export function createCustomWeaponModal(roleType, rosterId = '') {
     
   const modal = new ModalBuilder()
     .setCustomId(customId)
-    .setTitle(`Arme personnalisée - ${roleType}`);
+    .setTitle(`Équipement personnalisé - ${roleType}`);
 
   const weaponInput = new TextInputBuilder()
     .setCustomId('custom_weapon_name')
-    .setLabel('Nom de l\'arme')
+    .setLabel('Arme')
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder('Ex: Épée Runique T8.3')
+    .setPlaceholder('Ex: Épée Runique T8.3, Masse Lourde Avalon')
     .setRequired(true)
     .setMaxLength(100);
 
+  const armorInput = new TextInputBuilder()
+    .setCustomId('custom_armor_name')
+    .setLabel('Armure (optionnel)')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder('Ex: Plaque de Soldat T8.2, Armure de Givre')
+    .setRequired(false)
+    .setMaxLength(100);
+
   const firstRow = new ActionRowBuilder().addComponents(weaponInput);
-  modal.addComponents(firstRow);
+  const secondRow = new ActionRowBuilder().addComponents(armorInput);
+  modal.addComponents(firstRow, secondRow);
 
   return modal;
 }

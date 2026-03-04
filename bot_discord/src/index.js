@@ -516,14 +516,36 @@ client.on(Events.InteractionCreate, async interaction => {
           const oldRole = interaction.client.tempEditOldRole;
           const newRole = interaction.client.tempEditNewRole || capitalizedRole;
           
-          const result = rosterManager.changeRole(
-            rosterId,
-            interaction.user.id, // creatorId
-            userId,              // memberId
-            oldRole,
-            newRole,
-            weaponName
-          );
+          // Modifier directement l'inscription
+          const oldSignups = roster.signups[oldRole] || [];
+          const memberIndex = oldSignups.findIndex(s => s.userId === userId);
+          
+          if (memberIndex === -1) {
+            await interaction.update({ 
+              content: '❌ Membre introuvable', 
+              components: [] 
+            });
+            return;
+          }
+
+          // Retirer de l'ancien rôle
+          const member = oldSignups[memberIndex];
+          oldSignups.splice(memberIndex, 1);
+
+          // Ajouter au nouveau rôle
+          if (!roster.signups[newRole]) {
+            roster.signups[newRole] = [];
+          }
+          roster.signups[newRole].push({
+            userId: member.userId,
+            username: member.username,
+            weapon: weaponName,
+            armor: null, // Pas d'armure via menu standard
+            timestamp: Date.now()
+          });
+
+          // Sauvegarder
+          rosterManager.saveRosters();
 
           // Nettoyer les variables temporaires
           delete interaction.client.tempEditUserId;
@@ -531,28 +553,21 @@ client.on(Events.InteractionCreate, async interaction => {
           delete interaction.client.tempEditRosterId;
           delete interaction.client.tempEditNewRole;
 
-          if (result.success) {
-            const embed = generateSignupEmbed(roster);
-            const isCreator = roster.creatorId === interaction.user.id;
-            const buttons = generateSignupButtons(roster, isCreator);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
 
-            const channel = interaction.channel;
-            const rosterMessage = await channel.messages.fetch(rosterId);
-            await rosterMessage.edit({
-              embeds: [embed],
-              components: buttons
-            });
+          const channel = interaction.channel;
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
 
-            await interaction.update({ 
-              content: `✅ Membre modifié avec succès : **${newRole}** avec **${weaponName}**!`, 
-              components: [] 
-            });
-          } else {
-            await interaction.update({ 
-              content: `❌ ${result.error || result.message || 'Erreur'}`, 
-              components: [] 
-            });
-          }
+          await interaction.update({ 
+            content: `✅ Membre modifié avec succès : **${newRole}** avec **${weaponName}**!`, 
+            components: [] 
+          });
         } else {
           // Mode inscription normale
           const result = rosterManager.signup(
@@ -560,7 +575,9 @@ client.on(Events.InteractionCreate, async interaction => {
             interaction.user.id,
             interaction.user.username,
             capitalizedRole,
-            weaponName
+            weaponName,
+            interaction.guild?.id,
+            null // armor (pas d'armure via menu standard)
           );
 
           if (result.success) {
@@ -831,6 +848,7 @@ client.on(Events.InteractionCreate, async interaction => {
         const rosterId = parts[4]; // Extraire le rosterId du customId
         const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
         const customWeapon = interaction.fields.getTextInputValue('custom_weapon_name');
+        const customArmor = interaction.fields.getTextInputValue('custom_armor_name') || null;
 
         // Vérifier que le roster existe
         const roster = rosterManager.getRoster(rosterId);
@@ -839,17 +857,55 @@ client.on(Events.InteractionCreate, async interaction => {
           return;
         }
 
-        // Enregistrer l'inscription avec l'arme personnalisée
-        const result = rosterManager.signup(
-          rosterId,
-          interaction.user.id,
-          interaction.user.username,
-          capitalizedRole,
-          customWeapon,
-          interaction.guild?.id
-        );
+        // Vérifier si on est en mode édition de membre
+        const isEditMode = interaction.client.tempEditUserId && 
+                           interaction.client.tempEditRosterId === rosterId;
 
-        if (result.success) {
+        if (isEditMode) {
+          // Mode édition via modal personnalisé
+          const userId = interaction.client.tempEditUserId;
+          const oldRole = interaction.client.tempEditOldRole;
+          const newRole = interaction.client.tempEditNewRole || capitalizedRole;
+
+          // Pour l'instant, on va modifier directement les données
+          // TODO: créer une méthode changeRole dans roster-manager
+          const oldSignups = roster.signups[oldRole] || [];
+          const memberIndex = oldSignups.findIndex(s => s.userId === userId);
+          
+          if (memberIndex === -1) {
+            await interaction.reply({ 
+              content: '❌ Membre introuvable', 
+              ephemeral: true 
+            });
+            return;
+          }
+
+          // Retirer de l'ancien rôle
+          const member = oldSignups[memberIndex];
+          oldSignups.splice(memberIndex, 1);
+
+          // Ajouter au nouveau rôle
+          if (!roster.signups[newRole]) {
+            roster.signups[newRole] = [];
+          }
+          roster.signups[newRole].push({
+            userId: member.userId,
+            username: member.username,
+            weapon: customWeapon,
+            armor: customArmor,
+            timestamp: Date.now()
+          });
+
+          // Sauvegarder
+          rosterManager.saveRosters();
+
+          // Nettoyer les variables temporaires
+          delete interaction.client.tempEditUserId;
+          delete interaction.client.tempEditOldRole;
+          delete interaction.client.tempEditRosterId;
+          delete interaction.client.tempEditNewRole;
+
+          // Mettre à jour le message
           const embed = generateSignupEmbed(roster);
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
@@ -861,15 +917,52 @@ client.on(Events.InteractionCreate, async interaction => {
             components: buttons
           });
 
+          const equipmentText = customArmor 
+            ? `**${customWeapon}** + **${customArmor}**`
+            : `**${customWeapon}**`;
+
           await interaction.reply({ 
-            content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${customWeapon}**!`, 
+            content: `✅ Membre modifié avec succès : **${newRole}** avec ${equipmentText}!`, 
             ephemeral: true 
           });
         } else {
-          await interaction.reply({ 
-            content: `❌ ${result.error || result.message || 'Erreur'}`, 
-            ephemeral: true 
-          });
+          // Mode inscription normale
+          const result = rosterManager.signup(
+            rosterId,
+            interaction.user.id,
+            interaction.user.username,
+            capitalizedRole,
+            customWeapon,
+            interaction.guild?.id,
+            customArmor
+          );
+
+          if (result.success) {
+            const embed = generateSignupEmbed(roster);
+            const isCreator = roster.creatorId === interaction.user.id;
+            const buttons = generateSignupButtons(roster, isCreator);
+
+            const channel = interaction.channel;
+            const rosterMessage = await channel.messages.fetch(rosterId);
+            await rosterMessage.edit({
+              embeds: [embed],
+              components: buttons
+            });
+
+            const equipmentText = customArmor 
+              ? `**${customWeapon}** + **${customArmor}**`
+              : `**${customWeapon}**`;
+
+            await interaction.reply({ 
+              content: `✅ Inscription réussie comme **${capitalizedRole}** avec ${equipmentText}!`, 
+              ephemeral: true 
+            });
+          } else {
+            await interaction.reply({ 
+              content: `❌ ${result.error || result.message || 'Erreur'}`, 
+              ephemeral: true 
+            });
+          }
         }
         return;
       }

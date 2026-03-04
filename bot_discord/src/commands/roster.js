@@ -1,9 +1,56 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { rosterManager } from '../utils/roster-manager.js';
+import { generateSignupEmbed, generateSignupButtons } from '../utils/signup-ui.js';
 
 export const data = new SlashCommandBuilder()
   .setName('roster')
   .setDescription('Gestion des rosters')
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('create')
+      .setDescription('Créer un roster personnalisé (raids Avalon, etc.)')
+      .addStringOption(option =>
+        option
+          .setName('nom')
+          .setDescription('Nom de l\'événement (ex: Raid Avalon T8)')
+          .setRequired(true)
+      )
+      .addIntegerOption(option =>
+        option
+          .setName('tank')
+          .setDescription('Nombre de tanks')
+          .setMinValue(0)
+          .setMaxValue(20)
+      )
+      .addIntegerOption(option =>
+        option
+          .setName('dps')
+          .setDescription('Nombre de DPS')
+          .setMinValue(0)
+          .setMaxValue(50)
+      )
+      .addIntegerOption(option =>
+        option
+          .setName('healer')
+          .setDescription('Nombre de healers')
+          .setMinValue(0)
+          .setMaxValue(20)
+      )
+      .addIntegerOption(option =>
+        option
+          .setName('support')
+          .setDescription('Nombre de supports')
+          .setMinValue(0)
+          .setMaxValue(20)
+      )
+      .addIntegerOption(option =>
+        option
+          .setName('scout')
+          .setDescription('Nombre de scouts')
+          .setMinValue(0)
+          .setMaxValue(10)
+      )
+  )
   .addSubcommand(subcommand =>
     subcommand
       .setName('list')
@@ -28,6 +75,65 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
   const subcommand = interaction.options.getSubcommand();
+
+  if (subcommand === 'create') {
+    const eventName = interaction.options.getString('nom');
+    const quotas = {
+      Tank: interaction.options.getInteger('tank') || 0,
+      DPS: interaction.options.getInteger('dps') || 0,
+      Healer: interaction.options.getInteger('healer') || 0,
+      Support: interaction.options.getInteger('support') || 0,
+      Scout: interaction.options.getInteger('scout') || 0
+    };
+
+    // Vérifier qu'au moins un quota est > 0
+    const totalQuota = Object.values(quotas).reduce((sum, q) => sum + q, 0);
+    if (totalQuota === 0) {
+      await interaction.reply({
+        content: '❌ Vous devez définir au moins un quota (tank, dps, healer, support ou scout).',
+        ephemeral: true
+      });
+      return;
+    }
+
+    // Créer un roster temporaire pour l'affichage
+    const tempRoster = {
+      creatorId: interaction.user.id,
+      composition: { 
+        name: eventName,
+        members: [] // Pas de membres prédéfinis pour un roster personnalisé
+      },
+      signups: {},
+      waitlist: [],
+      quotas: quotas,
+      status: 'open',
+      createdAt: new Date()
+    };
+
+    const signupEmbed = generateSignupEmbed(tempRoster);
+    const signupButtons = generateSignupButtons(tempRoster, true);
+
+    const response = await interaction.reply({
+      embeds: [signupEmbed],
+      components: signupButtons,
+      fetchReply: true
+    });
+
+    // Créer le roster définitif avec l'ID du message
+    rosterManager.createRoster(
+      response.id,
+      interaction.user.id,
+      { name: eventName, members: [] },
+      null, // scheduledDate
+      interaction.guild?.id,
+      interaction.channel?.id
+    );
+
+    // Appliquer les quotas personnalisés
+    rosterManager.updateQuotas(response.id, interaction.user.id, quotas);
+
+    return;
+  }
 
   if (subcommand === 'list') {
     const allRosters = rosterManager.getAllRosters();

@@ -124,7 +124,7 @@ export class RosterManager {
   /**
    * Inscrit un joueur à un rôle
    */
-  signup(messageId, userId, username, role, weapon, guildId) {
+  signup(messageId, userId, username, role, weapon, guildId, armor = null) {
     const roster = this.rosters.get(messageId);
     if (!roster) return { success: false, error: 'Roster introuvable' };
     if (roster.status === 'closed') return { success: false, error: 'Inscriptions fermées' };
@@ -143,7 +143,7 @@ export class RosterManager {
     
     if (currentCount >= quota) {
       // Ajouter à la liste d'attente
-      roster.waitlist.push({ userId, username, role, weapon, timestamp: Date.now() });
+      roster.waitlist.push({ userId, username, role, weapon, armor, timestamp: Date.now() });
       
       // Notifier l'utilisateur qu'il est en waitlist
       if (this.notificationManager) {
@@ -163,7 +163,7 @@ export class RosterManager {
       roster.signups[role] = [];
     }
     
-    roster.signups[role].push({ userId, username, weapon, timestamp: Date.now() });
+    roster.signups[role].push({ userId, username, weapon, armor, timestamp: Date.now() });
 
     // Enregistrer la participation dans les stats
     if (guildId) {
