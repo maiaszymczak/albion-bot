@@ -632,33 +632,39 @@ export class RosterManager {
       }
     }
 
-    // Analyser les swaps de chaque joueur inscrit
+    // Analyser TOUS les swaps de chaque joueur inscrit
     for (const [currentRole, signups] of Object.entries(roster.signups)) {
       for (const signup of signups) {
         if (!signup.swaps || signup.swaps.length === 0) continue;
 
-        // Vérifier si ce joueur a un swap pour un rôle qui manque de joueurs
+        // Analyser chaque swap disponible
         for (const swap of signup.swaps) {
-          if (needsMorePlayers[swap.role] && needsMorePlayers[swap.role] > 0) {
-            const equipment = swap.armor 
-              ? `${swap.weapon} + ${swap.armor}`
-              : swap.weapon;
+          const equipment = swap.armor 
+            ? `${swap.weapon} + ${swap.armor}`
+            : swap.weapon;
 
-            suggestions.push({
-              type: 'fill_slot',
-              priority: 'high',
-              userId: signup.userId,
-              username: signup.username,
-              currentRole,
-              currentWeapon: signup.weapon,
-              suggestedRole: swap.role,
-              suggestedWeapon: swap.weapon,
-              suggestedArmor: swap.armor,
-              swapIndex: signup.swaps.indexOf(swap),
-              message: `💡 **${signup.username}** pourrait passer de **${currentRole}** à **${swap.role}** avec ${equipment}`,
-              benefit: `Remplirait un slot ${swap.role} vide (${needsMorePlayers[swap.role]} manquant${needsMorePlayers[swap.role] > 1 ? 's' : ''})`
-            });
-          }
+          // Priorité haute si remplit un slot vide, medium sinon
+          const fillsEmptySlot = needsMorePlayers[swap.role] && needsMorePlayers[swap.role] > 0;
+          const priority = fillsEmptySlot ? 'high' : 'medium';
+          
+          const benefit = fillsEmptySlot
+            ? `Remplirait un slot ${swap.role} vide (${needsMorePlayers[swap.role]} manquant${needsMorePlayers[swap.role] > 1 ? 's' : ''})`
+            : `Swap disponible vers ${swap.role}`;
+
+          suggestions.push({
+            type: fillsEmptySlot ? 'fill_slot' : 'available_swap',
+            priority,
+            userId: signup.userId,
+            username: signup.username,
+            currentRole,
+            currentWeapon: signup.weapon,
+            suggestedRole: swap.role,
+            suggestedWeapon: swap.weapon,
+            suggestedArmor: swap.armor,
+            swapIndex: signup.swaps.indexOf(swap),
+            message: `💡 **${signup.username}** pourrait passer de **${currentRole}** à **${swap.role}** avec ${equipment}`,
+            benefit
+          });
         }
       }
     }

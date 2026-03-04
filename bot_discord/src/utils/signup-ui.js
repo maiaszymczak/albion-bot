@@ -3,6 +3,49 @@ import { rosterManager } from './roster-manager.js';
 import { weaponsByTree, roleIcons } from '../data/albion-data.js';
 
 /**
+ * Génère un menu de sélection de rôle pour ajouter un swap
+ */
+export function generateSwapRoleMenu(rosterId) {
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId(`select_swap_role_${rosterId}`)
+    .setPlaceholder('Choisissez le rôle du swap')
+    .addOptions([
+      {
+        label: 'Tank',
+        value: 'Tank',
+        emoji: '🛡️',
+        description: 'Rôle défensif'
+      },
+      {
+        label: 'DPS',
+        value: 'DPS',
+        emoji: '⚔️',
+        description: 'Rôle offensif'
+      },
+      {
+        label: 'Healer',
+        value: 'Healer',
+        emoji: '💚',
+        description: 'Rôle de soin'
+      },
+      {
+        label: 'Support',
+        value: 'Support',
+        emoji: '🔮',
+        description: 'Rôle de soutien'
+      },
+      {
+        label: 'Scout',
+        value: 'Scout',
+        emoji: '👁️',
+        description: 'Rôle de reconnaissance'
+      }
+    ]);
+
+  return new ActionRowBuilder().addComponents(menu);
+}
+
+/**
  * Génère l'embed d'inscription
  */
 export function generateSignupEmbed(roster) {

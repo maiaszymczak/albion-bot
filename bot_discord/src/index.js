@@ -1,4 +1,4 @@
-import { Client, Collection, Events, GatewayIntentBits, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, ButtonBuilder, ButtonStyle, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -447,11 +447,17 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
       }
 
-      // Bouton "Ajouter un swap"
+      // Bouton "Ajouter un swap" - affiche menu de sélection de rôle
       if (interaction.customId.startsWith('add_swap_')) {
         const rosterId = interaction.customId.split('_')[2];
-        const modal = createSwapModal(rosterId);
-        await interaction.showModal(modal);
+        const { generateSwapRoleMenu } = await import('./utils/signup-ui.js');
+        const roleMenu = generateSwapRoleMenu(rosterId);
+        
+        await interaction.reply({
+          content: '🔄 **Choisissez le rôle de votre build alternatif**',
+          components: [roleMenu],
+          ephemeral: true
+        });
         return;
       }
 
@@ -557,6 +563,40 @@ client.on(Events.InteractionCreate, async interaction => {
   // ==================== MENUS DE SÉLECTION ====================
   if (interaction.isStringSelectMenu()) {
     try {
+      // Menu de sélection de rôle pour swap
+      if (interaction.customId.startsWith('select_swap_role_')) {
+        const rosterId = interaction.customId.replace('select_swap_role_', '');
+        const selectedRole = interaction.values[0];
+        
+        // Créer un modal personnalisé avec le rôle en titre
+        const modal = new ModalBuilder()
+          .setCustomId(`add_swap_modal_${selectedRole}_${rosterId}`)
+          .setTitle(`Swap ${selectedRole}`);
+
+        const weaponInput = new TextInputBuilder()
+          .setCustomId('swap_weapon')
+          .setLabel('Arme')
+          .setStyle(TextInputStyle.Short)
+          .setPlaceholder('Ex: Sanctifier, Arc Longue Portée')
+          .setRequired(true)
+          .setMaxLength(100);
+
+        const armorInput = new TextInputBuilder()
+          .setCustomId('swap_armor')
+          .setLabel('Armure (optionnel)')
+          .setStyle(TextInputStyle.Short)
+          .setPlaceholder('Ex: Plaque Soldat, Cuir Assassin')
+          .setRequired(false)
+          .setMaxLength(100);
+
+        const firstRow = new ActionRowBuilder().addComponents(weaponInput);
+        const secondRow = new ActionRowBuilder().addComponents(armorInput);
+        modal.addComponents(firstRow, secondRow);
+
+        await interaction.showModal(modal);
+        return;
+      }
+
       // Menu de sélection d'armes
       if (interaction.customId.startsWith('weapon_select_')) {
         const parts = interaction.customId.split('_');
@@ -1255,20 +1295,15 @@ client.on(Events.InteractionCreate, async interaction => {
 
       // Modal ajout de swap
       if (interaction.customId.startsWith('add_swap_modal_')) {
-        const rosterId = interaction.customId.split('_').pop();
-        const swapRole = interaction.fields.getTextInputValue('swap_role');
+        // Extraire le rôle et le rosterId depuis le customId: add_swap_modal_ROLE_ROSTERID
+        const parts = interaction.customId.replace('add_swap_modal_', '').split('_');
+        const swapRole = parts[0]; // Le rôle est déjà normalisé depuis le menu
+        const rosterId = parts.slice(1).join('_'); // Le reste est le rosterId
+        
         const swapWeapon = interaction.fields.getTextInputValue('swap_weapon');
         const swapArmor = interaction.fields.getTextInputValue('swap_armor') || null;
 
-        // Normaliser le rôle
-        const roleMapping = {
-          'tank': 'Tank',
-          'dps': 'DPS',
-          'healer': 'Healer',
-          'support': 'Support',
-          'scout': 'Scout'
-        };
-        const normalizedRole = roleMapping[swapRole.toLowerCase()] || swapRole.charAt(0).toUpperCase() + swapRole.slice(1).toLowerCase();
+        const normalizedRole = swapRole; // Déjà normalisé depuis le menu déroulant
 
         const result = rosterManager.addSwap(
           rosterId,
