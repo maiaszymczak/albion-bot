@@ -187,25 +187,38 @@ client.on(Events.InteractionCreate, async interaction => {
           }
         }
 
-        // Créer le roster
-        const roster = rosterManager.createRoster(
-          originalMessage.id,
+        // Générer l'interface d'inscription
+        const signupEmbed = generateSignupEmbed({
+          creatorId: interaction.user.id,
+          composition: { name: compositionName, members },
+          signups: {},
+          waitlist: [],
+          quotas: rosterManager.calculateQuotas({ members }),
+          status: 'open',
+          createdAt: new Date()
+        });
+        const isCreator = true;
+        const signupButtons = generateSignupButtons({
+          creatorId: interaction.user.id,
+          status: 'open'
+        }, isCreator);
+
+        // Répondre avec le roster (le message créé aura un nouvel ID)
+        const response = await interaction.reply({
+          embeds: [signupEmbed],
+          components: signupButtons,
+          fetchReply: true
+        });
+
+        // MAINTENANT créer le roster avec l'ID du nouveau message
+        rosterManager.createRoster(
+          response.id,
           interaction.user.id,
           { name: compositionName, members },
           null, // scheduledDate (peut être ajouté plus tard)
           interaction.guild?.id,
           interaction.channel?.id
         );
-
-        // Générer l'interface d'inscription
-        const signupEmbed = generateSignupEmbed(roster);
-        const isCreator = true; // Celui qui ouvre est forcément le créateur
-        const signupButtons = generateSignupButtons(roster, isCreator);
-
-        await interaction.reply({
-          embeds: [signupEmbed],
-          components: signupButtons
-        });
 
         return;
       }
