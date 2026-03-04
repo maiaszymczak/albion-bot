@@ -313,6 +313,14 @@ export function generateEditRosterMenu(roster, rosterId = null) {
     description: 'Retirer un membre du roster',
     emoji: '👢'
   });
+
+  // Option pour optimiser la compo
+  options.push({
+    label: '🔮 Optimiser la compo',
+    value: 'optimize_roster',
+    description: 'Suggestions basées sur les swaps disponibles',
+    emoji: '🔮'
+  });
   
   const customId = rosterId 
     ? `edit_roster_menu_${rosterId}`
@@ -391,6 +399,61 @@ export function generateMemberSelectMenu(roster, rosterId = null) {
     .setCustomId(customId)
     .setPlaceholder('Sélectionnez un membre')
     .addOptions(options.slice(0, 25)); // Limite Discord
+  
+  return new ActionRowBuilder().addComponents(menu);
+}
+
+/**
+ * Génère un menu pour sélectionner un swap ou une nouvelle arme lors de la modification d'un membre
+ */
+export function generateSwapSelectionMenu(roster, userId, newRole, rosterId = '') {
+  const options = [];
+  
+  // Trouver le membre et ses swaps
+  let memberSwaps = [];
+  for (const [roleType, signups] of Object.entries(roster.signups)) {
+    const signup = signups.find(s => s.userId === userId);
+    if (signup && signup.swaps) {
+      memberSwaps = signup.swaps;
+      break;
+    }
+  }
+  
+  // Filtrer les swaps qui correspondent au nouveau rôle
+  const roleSwaps = memberSwaps.filter(s => s.role === newRole);
+  
+  if (roleSwaps.length > 0) {
+    // Ajouter les swaps disponibles pour ce rôle
+    roleSwaps.forEach((swap, index) => {
+      const equipment = swap.armor 
+        ? `${swap.weapon} + ${swap.armor}`
+        : swap.weapon;
+      
+      options.push({
+        label: `🔄 Swap: ${equipment}`,
+        value: `swap_${index}`,
+        description: `Build alternatif pour ${newRole}`,
+        emoji: '🔄'
+      });
+    });
+  }
+  
+  // Toujours ajouter l'option de choisir manuellement
+  options.push({
+    label: '🆕 Choisir une autre arme',
+    value: 'choose_weapon',
+    description: 'Sélectionner une nouvelle arme',
+    emoji: '⚔️'
+  });
+  
+  const customId = rosterId 
+    ? `select_swap_or_weapon_${rosterId}`
+    : 'select_swap_or_weapon';
+  
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId(customId)
+    .setPlaceholder(roleSwaps.length > 0 ? 'Choisir un swap ou une nouvelle arme' : 'Choisir une arme')
+    .addOptions(options);
   
   return new ActionRowBuilder().addComponents(menu);
 }

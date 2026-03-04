@@ -613,6 +613,113 @@ export class RosterManager {
       console.log(`🧹 ${cleaned} rosters nettoyés`);
     }
   }
+
+  /**
+   * Analyse le roster et suggère des optimisations basées sur les swaps disponibles
+   */
+  analyzeRosterOptimization(messageId) {
+    const roster = this.rosters.get(messageId);
+    if (!roster) return { success: false, error: 'Roster introuvable' };
+
+    const suggestions = [];
+    
+    // Trouver les rôles qui manquent de joueurs
+    const needsMorePlayers = {};
+    for (const [roleType, quota] of Object.entries(roster.quotas)) {
+      const currentCount = (roster.signups[roleType] || []).length;
+      if (currentCount < quota) {
+        needsMorePlayers[roleType] = quota - currentCount;
+      }
+    }
+
+    // Analyser les swaps de chaque joueur inscrit
+    for (const [currentRole, signups] of Object.entries(roster.signups)) {
+      for (const signup of signups) {
+        if (!signup.swaps || signup.swaps.length === 0) continue;
+
+        // Vérifier si ce joueur a un swap pour un rôle qui manque de joueurs
+        for (const swap of signup.swaps) {
+          if (needsMorePlayers[swap.role] && needsMorePlayers[swap.role] > 0) {
+            const equipment = swap.armor 
+              ? `${swap.weapon} + ${swap.armor}`
+              : swap.weapon;
+
+            suggestions.push({
+              type: 'fill_slot',
+              priority: 'high',
+              userId: signup.userId,
+              username: signup.username,
+              currentRole,
+              currentWeapon: signup.weapon,
+              suggestedRole: swap.role,
+              suggestedWeapon: swap.weapon,
+              suggestedArmor: swap.armor,
+              swapIndex: signup.swaps.indexOf(swap),
+              message: `💡 **${signup.username}** pourrait passer de **${currentRole}** à **${swap.role}** avec ${equipment}`,
+              benefit: `Remplirait un slot ${swap.role} vide (${needsMorePlayers[swap.role]} manquant${needsMorePlayers[swap.role] > 1 ? 's' : ''})`
+            });
+          }
+        }
+      }
+    }
+
+    // Trier les suggestions par priorité
+    suggestions.sort((a, b) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    });
+
+    return {
+      success: true,
+      suggestions,
+      summary: {
+        totalSuggestions: suggestions.length,
+        roleNeeds: needsMorePlayers,
+        canOptimize: suggestions.length > 0
+      }
+    };
+  }
+
+  /**
+   * Applique une suggestion d'optimisation
+   */
+  applySuggestion(messageId, creatorId, suggestion) {
+    const roster = this.rosters.get(messageId);
+    if (!roster) return { success: false, error: 'Roster introuvable' };
+    if (roster.creatorId !== creatorId) return { success: false, error: 'Permission refusée' };
+
+    if (suggestion.type === 'fill_slot') {
+      // Déplacer le joueur vers le nouveau rôle avec son swap
+      const oldSignups = roster.signups[suggestion.currentRole] || [];
+      const memberIndex = oldSignups.findIndex(s => s.userId === suggestion.userId);
+      
+      if (memberIndex === -1) {
+        return { success: false, error: 'Membre introuvable' };
+      }
+
+      const member = oldSignups[memberIndex];
+      oldSignups.splice(memberIndex, 1);
+
+      // Ajouter au nouveau rôle
+      if (!roster.signups[suggestion.suggestedRole]) {
+        roster.signups[suggestion.suggestedRole] = [];
+      }
+      
+      roster.signups[suggestion.suggestedRole].push({
+        userId: member.userId,
+        username: member.username,
+        weapon: suggestion.suggestedWeapon,
+        armor: suggestion.suggestedArmor,
+        swaps: member.swaps,
+        timestamp: Date.now()
+      });
+
+      this.saveRosters();
+      return { success: true, message: 'Optimisation appliquée' };
+    }
+
+    return { success: false, error: 'Type de suggestion non supporté' };
+  }
 }
 
 // Instance singleton

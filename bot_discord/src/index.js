@@ -5,7 +5,7 @@ import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
 import express from 'express';
 import { rosterManager } from './utils/roster-manager.js';
-import { generateSignupEmbed, generateSignupButtons, generateWeaponMenu, generateEditRosterMenu, generateRoleSelectMenu, generateMemberSelectMenu } from './utils/signup-ui.js';
+import { generateSignupEmbed, generateSignupButtons, generateWeaponMenu, generateEditRosterMenu, generateRoleSelectMenu, generateMemberSelectMenu, generateSwapSelectionMenu } from './utils/signup-ui.js';
 import { createCustomWeaponModal, createEditQuotasModal, createEditWeaponModal, createFeedbackModal, createSwapModal } from './utils/modal-handler.js';
 import { createNotificationManager } from './utils/notification-manager.js';
 
@@ -714,6 +714,109 @@ client.on(Events.InteractionCreate, async interaction => {
               components: [kickMenu]
             });
             break;
+
+          case 'optimize_roster':
+            const analysis = rosterManager.analyzeRosterOptimization(rosterId);
+            
+            if (!analysis.success) {
+              await interaction.update({
+                content: `❌ ${analysis.error}`,
+                components: []
+              });
+              return;
+            }
+
+            if (analysis.suggestions.length === 0) {
+              await interaction.update({
+                content: '✅ **Roster déjà optimisé !**\n\nAucune suggestion d\'amélioration disponible. Tous les rôles sont remplis ou aucun swap utile n\'est disponible.',
+                components: []
+              });
+              return;
+            }
+
+            // Afficher les suggestions
+            let suggestionsText = `🔮 **Suggestions d'optimisation** (${analysis.suggestions.length})\n\n`;
+            
+            analysis.suggestions.slice(0, 5).forEach((s, index) => {
+              suggestionsText += `${index + 1}. ${s.message}\n   ↳ *${s.benefit}*\n\n`;
+            });
+
+            if (analysis.suggestions.length > 5) {
+              suggestionsText += `... et ${analysis.suggestions.length - 5} autre(s) suggestion(s)\n\n`;
+            }
+
+            // Créer des boutons pour appliquer les suggestions
+            const suggestionButtons = [];
+            analysis.suggestions.slice(0, 3).forEach((s, index) => {
+              suggestionButtons.push(
+                new ButtonBuilder()
+                  .setCustomId(`apply_suggestion_${index}_${rosterId}`)
+                  .setLabel(`Appliquer suggestion ${index + 1}`)
+                  .setStyle(ButtonStyle.Success)
+                  .setEmoji('✅')
+              );
+            });
+
+            const buttonRows = [];
+            for (let i = 0; i < suggestionButtons.length; i += 5) {
+              buttonRows.push(
+                new ActionRowBuilder().addComponents(suggestionButtons.slice(i, i + 5))
+              );
+            }
+
+            // Stocker les suggestions temporairement
+            interaction.client.rosterSuggestions = interaction.client.rosterSuggestions || {};
+            interaction.client.rosterSuggestions[rosterId] = analysis.suggestions;
+
+            await interaction.update({
+              content: suggestionsText,
+              components: buttonRows
+            });
+            break;
+        }
+        return;
+      }
+
+      // Appliquer une suggestion d'optimisation
+      if (interaction.customId.startsWith('apply_suggestion_')) {
+        const parts = interaction.customId.split('_');
+        const suggestionIndex = parseInt(parts[2]);
+        const rosterId = parts[3];
+
+        const suggestions = interaction.client.rosterSuggestions?.[rosterId];
+        if (!suggestions || !suggestions[suggestionIndex]) {
+          await interaction.reply({ 
+            content: '❌ Suggestion expirée, veuillez relancer l\'optimisation', 
+            ephemeral: true 
+          });
+          return;
+        }
+
+        const suggestion = suggestions[suggestionIndex];
+        const result = rosterManager.applySuggestion(rosterId, interaction.user.id, suggestion);
+
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+
+          const channel = interaction.channel;
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          await interaction.update({
+            content: `✅ Optimisation appliquée avec succès !\n\n${suggestion.message}`,
+            components: []
+          });
+        } else {
+          await interaction.reply({
+            content: `❌ ${result.error}`,
+            ephemeral: true
+          });
         }
         return;
       }
@@ -864,17 +967,134 @@ client.on(Events.InteractionCreate, async interaction => {
           });
           return;
         }
+
+        const roster = rosterManager.getRoster(rosterId);
+        if (!roster) {
+          await interaction.update({ content: '❌ Roster introuvable', components: [] });
+          return;
+        }
         
-        // Afficher le menu d'armes
-        const weaponMenu = generateWeaponMenu(capitalizedRole, rosterId);
+        // Afficher le menu de swaps ou d'armes
+        const swapMenu = generateSwapSelectionMenu(roster, userId, capitalizedRole, rosterId);
         
         // Stocker le nouveau rôle aussi
         interaction.client.tempEditNewRole = capitalizedRole;
         
         await interaction.update({
-          content: `✏️ **Modifier le membre**\nChoisissez la nouvelle arme pour **${capitalizedRole}** :`,
-          components: [weaponMenu]
+          content: `✏️ **Modifier le membre**\nChoisissez l'équipement pour **${capitalizedRole}** :`,
+          components: [swapMenu]
         });
+        return;
+      }
+
+      // Menu de sélection de swap ou arme (nouvelle étape)
+      if (interaction.customId.startsWith('select_swap_or_weapon')) {
+        const parts = interaction.customId.split('_');
+        const rosterId = parts[parts.length - 1];
+        const choice = interaction.values[0];
+        
+        const userId = interaction.client.tempEditUserId;
+        const oldRole = interaction.client.tempEditOldRole;
+        const newRole = interaction.client.tempEditNewRole;
+        
+        if (!userId || !rosterId || !newRole) {
+          await interaction.update({ 
+            content: '❌ Session expirée, veuillez recommencer', 
+            components: [] 
+          });
+          return;
+        }
+
+        if (choice === 'choose_weapon') {
+          // Afficher le menu d'armes standard
+          const weaponMenu = generateWeaponMenu(newRole, rosterId);
+          
+          await interaction.update({
+            content: `✏️ **Modifier le membre**\nChoisissez la nouvelle arme pour **${newRole}** :`,
+            components: [weaponMenu]
+          });
+        } else if (choice.startsWith('swap_')) {
+          // Utiliser un swap existant
+          const swapIndex = parseInt(choice.split('_')[1]);
+          const roster = rosterManager.getRoster(rosterId);
+          
+          if (!roster) {
+            await interaction.update({ content: '❌ Roster introuvable', components: [] });
+            return;
+          }
+
+          // Trouver le swap
+          let selectedSwap = null;
+          for (const [roleType, signups] of Object.entries(roster.signups)) {
+            const signup = signups.find(s => s.userId === userId);
+            if (signup && signup.swaps && signup.swaps[swapIndex]) {
+              selectedSwap = signup.swaps[swapIndex];
+              break;
+            }
+          }
+
+          if (!selectedSwap) {
+            await interaction.update({ content: '❌ Swap introuvable', components: [] });
+            return;
+          }
+
+          // Appliquer le swap
+          const oldSignups = roster.signups[oldRole] || [];
+          const memberIndex = oldSignups.findIndex(s => s.userId === userId);
+          
+          if (memberIndex === -1) {
+            await interaction.update({ content: '❌ Membre introuvable', components: [] });
+            return;
+          }
+
+          // Retirer de l'ancien rôle
+          const member = oldSignups[memberIndex];
+          oldSignups.splice(memberIndex, 1);
+
+          // Ajouter au nouveau rôle avec le swap
+          if (!roster.signups[newRole]) {
+            roster.signups[newRole] = [];
+          }
+          roster.signups[newRole].push({
+            userId: member.userId,
+            username: member.username,
+            weapon: selectedSwap.weapon,
+            armor: selectedSwap.armor,
+            swaps: member.swaps, // Conserver les swaps
+            timestamp: Date.now()
+          });
+
+          // Sauvegarder
+          rosterManager.saveRosters();
+
+          // Nettoyer les variables temporaires
+          delete interaction.client.tempEditUserId;
+          delete interaction.client.tempEditOldRole;
+          delete interaction.client.tempEditRosterId;
+          delete interaction.client.tempEditNewRole;
+
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+
+          const channel = interaction.channel;
+          const rosterMessage = await channel.messages.fetch(rosterId);
+          await rosterMessage.edit({
+            embeds: [embed],
+            components: buttons
+          });
+
+          const equipment = selectedSwap.armor 
+            ? `**${selectedSwap.weapon}** + **${selectedSwap.armor}**`
+            : `**${selectedSwap.weapon}**`;
+
+          await interaction.update({ 
+            content: `✅ Membre modifié avec succès : **${newRole}** avec ${equipment} (swap)!`, 
+            components: [] 
+          });
+        }
+        return;
+      }
         return;
       }
 
