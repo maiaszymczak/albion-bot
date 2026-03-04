@@ -353,7 +353,7 @@ client.on(Events.InteractionCreate, async interaction => {
         const weaponMenu = generateWeaponMenu(capitalizedRole, rosterId);
         
         const response = await interaction.reply({
-          content: `Choisissez votre arme pour le rôle **${capitalizedRole}** :`,
+          content: `Choisissez votre arme pour le rôle **${capitalizedRole}** :\n\n💡 **Astuce :** Tapez \`/weapon\` ou \`/armor\` pour rechercher un équipement spécifique avec autocomplétion !`,
           components: [weaponMenu],
           ephemeral: true,
           fetchReply: true
@@ -476,7 +476,7 @@ client.on(Events.InteractionCreate, async interaction => {
             },
             {
               name: '📊 Commandes utiles',
-              value: '• `/stats me` : Vos statistiques\n• `/roster list` : Liste des rosters actifs\n• `/template save` : Sauvegarder une compo',
+              value: '• `/weapon` : Rechercher une arme avec autocomplétion\n• `/armor` : Rechercher une armure avec autocomplétion\n• `/stats me` : Vos statistiques\n• `/roster list` : Liste des rosters actifs\n• `/template save` : Sauvegarder une compo',
               inline: false
             }
           ],
