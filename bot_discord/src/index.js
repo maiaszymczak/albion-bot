@@ -738,7 +738,8 @@ client.on(Events.InteractionCreate, async interaction => {
             let suggestionsText = `🔮 **Suggestions d'optimisation** (${analysis.suggestions.length})\n\n`;
             
             analysis.suggestions.slice(0, 5).forEach((s, index) => {
-              suggestionsText += `${index + 1}. ${s.message}\n   ↳ *${s.benefit}*\n\n`;
+              const shortMessage = s.message.length > 80 ? s.message.substring(0, 77) + '...' : s.message;
+              suggestionsText += `${index + 1}. ${shortMessage}\n   ↳ *${s.benefit}*\n\n`;
             });
 
             if (analysis.suggestions.length > 5) {
@@ -767,6 +768,10 @@ client.on(Events.InteractionCreate, async interaction => {
             // Stocker les suggestions temporairement
             interaction.client.rosterSuggestions = interaction.client.rosterSuggestions || {};
             interaction.client.rosterSuggestions[rosterId] = analysis.suggestions;
+
+            if (buttonRows.length === 0) {
+              suggestionsText += '\n_Utilisez "Modifier un inscrit" pour appliquer manuellement les suggestions._';
+            }
 
             await interaction.update({
               content: suggestionsText,
