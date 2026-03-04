@@ -26,13 +26,21 @@ export function generateSignupEmbed(roster) {
           equipment += ` + ${s.armor}`;
         }
         
-        // Afficher le nombre de swaps si présents
-        let swapInfo = '';
+        let line = `• ${s.username} - ${equipment}`;
+        
+        // Afficher les swaps détaillés si présents
         if (s.swaps && s.swaps.length > 0) {
-          swapInfo = ` 🔄(${s.swaps.length})`;
+          line += `\n  └ Swaps: `;
+          const swapList = s.swaps.map(swap => {
+            const swapEquipment = swap.armor 
+              ? `${swap.weapon} + ${swap.armor}`
+              : swap.weapon;
+            return `${roleIcons[swap.role] || '⚔️'} ${swap.role}: ${swapEquipment}`;
+          }).join(', ');
+          line += swapList;
         }
         
-        return `• ${s.username} - ${equipment}${swapInfo}`;
+        return line;
       }).join('\n');
     } else {
       value += '_(Aucune inscription)_';
