@@ -389,7 +389,7 @@ client.on(Events.InteractionCreate, async interaction => {
           return;
         }
         
-        const editMenu = generateEditRosterMenu(roster);
+        const editMenu = generateEditRosterMenu(roster, rosterId);
         
         const response = await interaction.reply({
           content: '⚙️ **Modification du roster**\nChoisissez une action :',
@@ -635,25 +635,16 @@ client.on(Events.InteractionCreate, async interaction => {
       }
 
       // Menu d'édition du roster
-      if (interaction.customId === 'edit_roster_menu') {
+      if (interaction.customId.startsWith('edit_roster_menu')) {
+        const parts = interaction.customId.split('_');
+        const rosterId = parts[parts.length - 1]; // Dernier élément
         const action = interaction.values[0];
-        const channel = interaction.channel;
-        const messages = await channel.messages.fetch({ limit: 10 });
-        let rosterId = null;
         
-        for (const msg of messages.values()) {
-          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
-            rosterId = msg.id;
-            break;
-          }
-        }
-
-        if (!rosterId) {
-          await interaction.reply({ content: '❌ Impossible de trouver le roster.', ephemeral: true });
+        const roster = rosterManager.getRoster(rosterId);
+        if (!roster) {
+          await interaction.reply({ content: '❌ Roster introuvable.', ephemeral: true });
           return;
         }
-
-        const roster = rosterManager.getRoster(rosterId);
 
         switch (action) {
           case 'edit_quotas':
@@ -678,7 +669,7 @@ client.on(Events.InteractionCreate, async interaction => {
             break;
 
           case 'edit_signup':
-            const memberMenu = generateMemberSelectMenu(roster);
+            const memberMenu = generateMemberSelectMenu(roster, rosterId);
             if (!memberMenu) {
               await interaction.update({
                 content: '❌ Aucun membre inscrit à modifier',
@@ -693,7 +684,7 @@ client.on(Events.InteractionCreate, async interaction => {
             break;
 
           case 'kick_member':
-            const kickMenu = generateMemberSelectMenu(roster);
+            const kickMenu = generateMemberSelectMenu(roster, rosterId);
             if (!kickMenu) {
               await interaction.update({
                 content: '❌ Aucun membre inscrit à expulser',

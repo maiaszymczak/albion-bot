@@ -265,7 +265,7 @@ export function generateWeaponMenu(roleType, rosterId = '') {
 /**
  * Génère l'interface de modification de roster (pour le créateur)
  */
-export function generateEditRosterMenu(roster) {
+export function generateEditRosterMenu(roster, rosterId = null) {
   const options = [];
   
   // Option pour modifier les quotas
@@ -307,9 +307,13 @@ export function generateEditRosterMenu(roster) {
     emoji: '👢'
   });
   
+  const customId = rosterId 
+    ? `edit_roster_menu_${rosterId}`
+    : 'edit_roster_menu';
+  
   const menu = new StringSelectMenuBuilder()
-    .setCustomId('edit_roster_menu')
-    .setPlaceholder('Choisissez une action de modification')
+    .setCustomId(customId)
+    .setPlaceholder('Choisissez une action')
     .addOptions(options);
   
   return new ActionRowBuilder().addComponents(menu);
@@ -350,7 +354,7 @@ export function generateRoleSelectMenu(rosterId = '', purpose = 'slot') {
 /**
  * Génère le menu de sélection d'un membre inscrit
  */
-export function generateMemberSelectMenu(roster) {
+export function generateMemberSelectMenu(roster, rosterId = null) {
   const options = [];
   
   for (const [roleType, signups] of Object.entries(roster.signups)) {
@@ -372,8 +376,8 @@ export function generateMemberSelectMenu(roster) {
     });
   }
   
-  const customId = roster.id 
-    ? `select_member_to_modify_${roster.id}`
+  const customId = rosterId 
+    ? `select_member_to_modify_${rosterId}`
     : 'select_member_to_modify';
   
   const menu = new StringSelectMenuBuilder()
