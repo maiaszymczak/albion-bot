@@ -64,7 +64,7 @@ export class RosterManager {
       composition,
       signups: {}, // { roleType: [{ userId, username, weapon }] }
       waitlist: [], // [{ userId, username, role, weapon }]
-      quotas: this.calculateQuotas(composition),
+      quotas: this.calculateQuotas(composition.members || composition),
       status: 'open', // 'open', 'closed', 'full', 'completed'
       createdAt: new Date(),
       scheduledDate: scheduledDate ? new Date(scheduledDate) : null,

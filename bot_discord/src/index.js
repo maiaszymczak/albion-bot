@@ -193,7 +193,7 @@ client.on(Events.InteractionCreate, async interaction => {
           composition: { name: compositionName, members },
           signups: {},
           waitlist: [],
-          quotas: rosterManager.calculateQuotas({ members }),
+          quotas: rosterManager.calculateQuotas(members),
           status: 'open',
           createdAt: new Date()
         });
