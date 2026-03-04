@@ -8,10 +8,28 @@ export class RosterManager {
     // Map<messageId, RosterData>
     this.rosters = new Map();
     this.notificationManager = null; // Sera injecté depuis index.js
+    this.autoSaveInterval = null; // Référence vers l'interval
     this.loadRosters();
-    
-    // Auto-save toutes les 5 minutes
-    setInterval(() => this.saveRosters(), 5 * 60 * 1000);
+  }
+
+  /**
+   * Démarre l'auto-save (appelé depuis index.js)
+   */
+  startAutoSave() {
+    if (!this.autoSaveInterval) {
+      this.autoSaveInterval = setInterval(() => this.saveRosters(), 5 * 60 * 1000);
+      console.log('💾 Auto-save activé (toutes les 5 minutes)');
+    }
+  }
+
+  /**
+   * Arrête l'auto-save
+   */
+  stopAutoSave() {
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval);
+      this.autoSaveInterval = null;
+    }
   }
 
   /**

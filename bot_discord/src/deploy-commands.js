@@ -48,7 +48,10 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN);
       );
       console.log(`✅ ${data.length} commande(s) déployée(s) globalement !`);
     }
+    
+    process.exit(0);
   } catch (error) {
     console.error('❌ Erreur lors du déploiement:', error);
+    process.exit(1);
   }
 })();

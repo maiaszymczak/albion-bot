@@ -104,6 +104,9 @@ client.once(Events.ClientReady, (c) => {
   const notificationManager = createNotificationManager(c);
   rosterManager.setNotificationManager(notificationManager);
   
+  // Démarrer l'auto-save
+  rosterManager.startAutoSave();
+  
   // Reprogrammer tous les rappels existants
   notificationManager.rescheduleAllReminders(rosterManager.rosters, c);
   console.log('✅ Système de notifications initialisé');
