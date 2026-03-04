@@ -3,9 +3,13 @@ import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from
 /**
  * Crée un modal pour la saisie manuelle d'une arme
  */
-export function createCustomWeaponModal(roleType) {
+export function createCustomWeaponModal(roleType, rosterId = '') {
+  const customId = rosterId 
+    ? `custom_weapon_modal_${roleType.toLowerCase()}_${rosterId}`
+    : `custom_weapon_modal_${roleType.toLowerCase()}`;
+    
   const modal = new ModalBuilder()
-    .setCustomId(`custom_weapon_modal_${roleType.toLowerCase()}`)
+    .setCustomId(customId)
     .setTitle(`Arme personnalisée - ${roleType}`);
 
   const weaponInput = new TextInputBuilder()

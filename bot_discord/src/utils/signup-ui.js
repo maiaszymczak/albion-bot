@@ -198,7 +198,7 @@ export function generateSignupButtons(roster, isCreator = false) {
 /**
  * Génère le menu de sélection d'armes
  */
-export function generateWeaponMenu(roleType) {
+export function generateWeaponMenu(roleType, rosterId = '') {
   const weapons = [];
   
   // Filtrer les armes par rôle
@@ -237,8 +237,13 @@ export function generateWeaponMenu(roleType) {
     emoji: '✍️'
   });
   
+  // Inclure le rosterId dans le customId si fourni
+  const customId = rosterId 
+    ? `weapon_select_${roleType.toLowerCase()}_${rosterId}`
+    : `weapon_select_${roleType.toLowerCase()}`;
+  
   const menu = new StringSelectMenuBuilder()
-    .setCustomId(`weapon_select_${roleType.toLowerCase()}`)
+    .setCustomId(customId)
     .setPlaceholder(`Choisissez votre arme ${roleType}`)
     .addOptions(options);
   

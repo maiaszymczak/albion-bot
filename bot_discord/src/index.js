@@ -330,8 +330,8 @@ client.on(Events.InteractionCreate, async interaction => {
         const roleType = interaction.customId.split('_')[1];
         const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
         
-        // Générer le menu de sélection d'armes
-        const weaponMenu = generateWeaponMenu(capitalizedRole);
+        // Générer le menu de sélection d'armes avec le rosterId
+        const weaponMenu = generateWeaponMenu(capitalizedRole, rosterId);
         
         const response = await interaction.reply({
           content: `Choisissez votre arme pour le rôle **${capitalizedRole}** :`,
@@ -486,31 +486,23 @@ client.on(Events.InteractionCreate, async interaction => {
     try {
       // Menu de sélection d'armes
       if (interaction.customId.startsWith('weapon_select_')) {
-        const roleType = interaction.customId.split('_')[2];
+        const parts = interaction.customId.split('_');
+        const roleType = parts[2];
+        const rosterId = parts[3]; // Extraire le rosterId du customId
         const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
         const weaponName = interaction.values[0];
 
         // Cas spécial: arme personnalisée
         if (weaponName === 'custom_weapon') {
-          const modal = createCustomWeaponModal(capitalizedRole);
+          const modal = createCustomWeaponModal(capitalizedRole, rosterId);
           await interaction.showModal(modal);
           return;
         }
 
-        // Trouver le roster ID depuis les messages récents du canal
-        const channel = interaction.channel;
-        const messages = await channel.messages.fetch({ limit: 10 });
-        let rosterId = null;
-        
-        for (const msg of messages.values()) {
-          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
-            rosterId = msg.id;
-            break;
-          }
-        }
-
-        if (!rosterId) {
-          await interaction.reply({ content: '❌ Impossible de trouver le roster.', ephemeral: true });
+        // Vérifier que le roster existe
+        const roster = rosterManager.getRoster(rosterId);
+        if (!roster) {
+          await interaction.reply({ content: '❌ Roster introuvable.', ephemeral: true });
           return;
         }
 
@@ -525,11 +517,11 @@ client.on(Events.InteractionCreate, async interaction => {
 
         if (result.success) {
           // Mettre à jour le message du roster
-          const roster = rosterManager.getRoster(rosterId);
           const embed = generateSignupEmbed(roster);
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
 
+          const channel = interaction.channel;
           const rosterMessage = await channel.messages.fetch(rosterId);
           await rosterMessage.edit({
             embeds: [embed],
@@ -768,24 +760,16 @@ client.on(Events.InteractionCreate, async interaction => {
     try {
       // Modal arme personnalisée
       if (interaction.customId.startsWith('custom_weapon_modal_')) {
-        const roleType = interaction.customId.split('_')[3];
+        const parts = interaction.customId.split('_');
+        const roleType = parts[3];
+        const rosterId = parts[4]; // Extraire le rosterId du customId
         const capitalizedRole = roleType.charAt(0).toUpperCase() + roleType.slice(1);
         const customWeapon = interaction.fields.getTextInputValue('custom_weapon_name');
 
-        // Trouver le roster
-        const channel = interaction.channel;
-        const messages = await channel.messages.fetch({ limit: 10 });
-        let rosterId = null;
-        
-        for (const msg of messages.values()) {
-          if (msg.embeds[0]?.title?.includes('Inscriptions')) {
-            rosterId = msg.id;
-            break;
-          }
-        }
-
-        if (!rosterId) {
-          await interaction.reply({ content: '❌ Impossible de trouver le roster.', ephemeral: true });
+        // Vérifier que le roster existe
+        const roster = rosterManager.getRoster(rosterId);
+        if (!roster) {
+          await interaction.reply({ content: '❌ Roster introuvable.', ephemeral: true });
           return;
         }
 
@@ -800,11 +784,11 @@ client.on(Events.InteractionCreate, async interaction => {
         );
 
         if (result.success) {
-          const roster = rosterManager.getRoster(rosterId);
           const embed = generateSignupEmbed(roster);
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
 
+          const channel = interaction.channel;
           const rosterMessage = await channel.messages.fetch(rosterId);
           await rosterMessage.edit({
             embeds: [embed],
