@@ -187,8 +187,13 @@ client.on(Events.InteractionCreate, async interaction => {
           }
         }
 
-        // Générer l'interface d'inscription
-        const signupEmbed = generateSignupEmbed({
+        if (members.length === 0) {
+          await interaction.reply({ content: '❌ Aucun membre détecté dans la composition.', ephemeral: true });
+          return;
+        }
+
+        // Créer d'abord le roster temporaire pour avoir l'ID
+        const tempRoster = {
           creatorId: interaction.user.id,
           composition: { name: compositionName, members },
           signups: {},
@@ -196,12 +201,11 @@ client.on(Events.InteractionCreate, async interaction => {
           quotas: rosterManager.calculateQuotas(members),
           status: 'open',
           createdAt: new Date()
-        });
-        const isCreator = true;
-        const signupButtons = generateSignupButtons({
-          creatorId: interaction.user.id,
-          status: 'open'
-        }, isCreator);
+        };
+
+        // Générer l'interface d'inscription
+        const signupEmbed = generateSignupEmbed(tempRoster);
+        const signupButtons = generateSignupButtons(tempRoster, true);
 
         // Répondre avec le roster (le message créé aura un nouvel ID)
         const response = await interaction.reply({
@@ -210,7 +214,7 @@ client.on(Events.InteractionCreate, async interaction => {
           fetchReply: true
         });
 
-        // MAINTENANT créer le roster avec l'ID du nouveau message
+        // MAINTENANT créer le roster définitif avec l'ID du nouveau message
         rosterManager.createRoster(
           response.id,
           interaction.user.id,
