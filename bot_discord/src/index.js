@@ -749,13 +749,15 @@ client.on(Events.InteractionCreate, async interaction => {
             // Créer des boutons pour appliquer les suggestions
             const suggestionButtons = [];
             analysis.suggestions.slice(0, 3).forEach((s, index) => {
-              suggestionButtons.push(
-                new ButtonBuilder()
-                  .setCustomId(`apply_suggestion_${index}_${rosterId}`)
-                  .setLabel(`Appliquer suggestion ${index + 1}`)
-                  .setStyle(ButtonStyle.Success)
-                  .setEmoji('✅')
-              );
+              if (s.type === 'fill_slot') {
+                suggestionButtons.push(
+                  new ButtonBuilder()
+                    .setCustomId(`apply_suggestion_${index}_${rosterId}`)
+                    .setLabel(`Appliquer suggestion ${index + 1}`)
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('✅')
+                );
+              }
             });
 
             const buttonRows = [];
@@ -784,15 +786,17 @@ client.on(Events.InteractionCreate, async interaction => {
 
       // Appliquer une suggestion d'optimisation
       if (interaction.customId.startsWith('apply_suggestion_')) {
+        await interaction.deferUpdate(); // Éviter l'expiration de l'interaction
+
         const parts = interaction.customId.split('_');
         const suggestionIndex = parseInt(parts[2]);
         const rosterId = parts[3];
 
         const suggestions = interaction.client.rosterSuggestions?.[rosterId];
         if (!suggestions || !suggestions[suggestionIndex]) {
-          await interaction.reply({ 
+          await interaction.editReply({ 
             content: '❌ Suggestion expirée, veuillez relancer l\'optimisation', 
-            ephemeral: true 
+            components: []
           });
           return;
         }
@@ -813,14 +817,14 @@ client.on(Events.InteractionCreate, async interaction => {
             components: buttons
           });
 
-          await interaction.update({
+          await interaction.editReply({
             content: `✅ Optimisation appliquée avec succès !\n\n${suggestion.message}`,
             components: []
           });
         } else {
-          await interaction.reply({
+          await interaction.editReply({
             content: `❌ ${result.error}`,
-            ephemeral: true
+            components: []
           });
         }
         return;
