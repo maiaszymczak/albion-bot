@@ -2,7 +2,18 @@
 
 ## 📋 Vue d'ensemble
 
-Toutes les améliorations demandées ont été implémentées (sauf rôles Discord automatiques) :
+**10 fonctionnalités majeures implémentées** (sauf rôles Discord automatiques) :
+
+1. ✅ Persistance des données (JSON)
+2. ✅ Statistiques et classements
+3. ✅ Gestion avancée des rosters
+4. ✅ Templates personnalisables
+5. ✅ Liste d'attente automatique
+6. ✅ Système de feedback
+7. ✅ Améliorations UI/UX
+8. ✅ Bouton "Marquer terminé"
+9. ✅ Rétention et nettoyage
+10. ✅ **Notifications push automatiques** 🆕
 
 ---
 
@@ -16,6 +27,7 @@ Toutes les améliorations demandées ont été implémentées (sauf rôles Disco
 
 **Fichiers créés** :
 - `src/utils/persistence.js` - Gestionnaire de persistance
+- `src/utils/notification-manager.js` - Gestionnaire de notifications 🆕
 - `data/rosters.json` - Rosters actifs
 - `data/stats.json` - Statistiques utilisateurs
 - `data/templates.json` - Templates personnalisés
@@ -362,14 +374,132 @@ src/
    - Les données sont sauvegardées
    - Rechargement automatique au redémarrage
 
+5. **Notifications non reçues ?**
+   - Vérifier que les DMs sont autorisés (Paramètres → Confidentialité)
+   - Le bot envoie un DM silencieux pour tester
+   - Logs disponibles dans la console du bot
+
+---
+
+## 📬 Système de Notifications Push 🆕
+
+### 10. 🔔 **Notifications automatiques par DM**
+
+Le bot envoie des messages privés automatiques pour tenir tout le monde informé !
+
+#### **Pour les créateurs d'événements** :
+- ✅ **Nouvelle inscription** : Notification avec nom, rôle, arme (embed vert)
+- ❌ **Désinscription** : Alerte quand quelqu'un se retire (embed rouge)
+- 🎯 **Roster complet** : DM quand toutes les places sont prises (embed orange)
+
+#### **Pour les participants** :
+- ⏳ **Ajout en waitlist** : DM avec position dans la file (embed orange)
+- 🎉 **Promotion automatique** : DM quand promu de la waitlist (embed vert)
+- ⏰ **Rappel 1h avant** : DM envoyé à tous 1 heure avant l'événement (embed rose)
+- 🏆 **Événement terminé** : DM demandant le feedback (embed gris)
+
+#### **Programmation intelligente** :
+- Les rappels sont programmés automatiquement lors de la création d'un roster avec date
+- Reprogrammation au redémarrage du bot (tous les rappels sont restaurés)
+- Annulation automatique si l'événement est marqué terminé
+
+**Exemple de messages** :
+```
+🟢 NOUVELLE INSCRIPTION
+─────────────────────────
+Joueur : Maia
+Rôle : Tank
+Arme : Grande Hache
+Compo : Raid Avalonian 10v10
+
+🔴 DÉSINSCRIPTION
+─────────────────────────
+Maia s'est désinscrit du rôle Tank
+
+⏳ LISTE D'ATTENTE
+─────────────────────────
+Vous êtes en position #3 pour "HCE T8"
+
+⏰ RAPPEL D'ÉVÉNEMENT
+─────────────────────────
+L'événement commence dans 1 heure !
+Préparez-vous 🎮
+```
+
+**Fichier implémenté** :
+- `src/utils/notification-manager.js` - 265 lignes
+- Intégré dans `roster-manager.js` et `index.js`
+
 ---
 
 ## 🎉 Résumé
 
-**9 améliorations majeures implémentées** :
+**10 améliorations majeures implémentées** :
 1. ✅ Persistance JSON
-2. ✅ Notifications (structure prête)
+2. ✅ Notifications push automatiques 🆕
 3. ✅ Planification événements
+4. ✅ Statistiques & leaderboard
+5. ✅ Templates personnalisés
+6. ✅ Waitlist automatique
+7. ✅ Système de feedback
+8. ✅ Roster management (list/history/clone)
+9. ✅ Amélioration UI/UX (barres progression, status colors)
+10. ✅ Nettoyage automatique
+
+❌ **Non implémenté** : Rôles Discord automatiques (permissions serveur nécessaires)
+
+---
+
+## 📁 Architecture du code
+
+```
+src/
+├── commands/
+│   ├── build.js          # Recommandations stuff par arme
+│   ├── compo.js          # Générateur de compositions
+│   ├── stats.js          # Statistiques utilisateurs 🆕
+│   ├── roster.js         # Gestion rosters 🆕
+│   └── template.js       # Templates personnalisés 🆕
+├── utils/
+│   ├── composition-generator.js  # Logique génération compos
+│   ├── roster-manager.js         # Gestion inscriptions (365 lignes)
+│   ├── persistence.js            # Sauvegarde JSON 🆕
+│   ├── notification-manager.js   # Notifications push 🆕 (265 lignes)
+│   ├── signup-ui.js              # Interface signup (280 lignes)
+│   └── modal-handler.js          # Modals Discord
+├── data/
+│   └── albion-data.js    # Base de données 178 armes
+└── index.js              # Point d'entrée (837 lignes)
+
+data/
+├── rosters.json          # Rosters actifs
+├── stats.json            # Stats utilisateurs
+└── templates.json        # Templates persos
+```
+
+**Total** : ~2500 lignes de code JavaScript
+
+---
+
+## 🚀 Déploiement
+
+Le bot est déployé sur **Render** avec :
+- ✅ Express HTTP server (port 3000)
+- ✅ Keepalive automatique
+- ✅ Persistance sur disque
+- ✅ Rechargement rosters au démarrage
+- ✅ Reprogrammation rappels automatique
+
+**Variables d'environnement requises** :
+```
+DISCORD_TOKEN=...
+DISCORD_CLIENT_ID=...
+PORT=3000
+```
+
+---
+
+Toutes les fonctionnalités sont opérationnelles et prêtes pour la production ! 🎮✨
 4. ✅ Statistiques & leaderboard
 5. ✅ Templates personnalisés
 6. ✅ Système de réserve/waitlist
