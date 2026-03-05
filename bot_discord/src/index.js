@@ -303,7 +303,30 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.deferUpdate();
         
         const rosterId = interaction.message.id;
-        const result = rosterManager.close(rosterId, interaction.user.id);
+        const result = rosterManager.close(rosterId, interaction.user.id, client);
+        
+        if (result.success) {
+          const roster = rosterManager.getRoster(rosterId);
+          const embed = generateSignupEmbed(roster);
+          const isCreator = roster.creatorId === interaction.user.id;
+          const buttons = generateSignupButtons(roster, isCreator);
+          
+          await interaction.editReply({
+            embeds: [embed],
+            components: buttons
+          });
+        } else {
+          await interaction.reply({ content: `❌ ${result.error || result.message || 'Erreur'}`, ephemeral: true });
+        }
+        return;
+      }
+
+      // Bouton "Rouvrir"
+      if (interaction.customId === 'reopen_roster') {
+        await interaction.deferUpdate();
+        
+        const rosterId = interaction.message.id;
+        const result = rosterManager.reopen(rosterId, interaction.user.id);
         
         if (result.success) {
           const roster = rosterManager.getRoster(rosterId);

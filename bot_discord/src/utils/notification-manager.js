@@ -175,6 +175,88 @@ export class NotificationManager {
   }
 
   /**
+   * Envoie un résumé des feedbacks au créateur lorsque le roster est fermé
+   */
+  async sendFeedbackSummary(creatorId, roster) {
+    if (!roster.feedback || roster.feedback.length === 0) {
+      console.log(`📊 Pas de feedback à envoyer pour le roster ${roster.composition.name}`);
+      return { success: true, hasFeedback: false };
+    }
+
+    // Calculer les statistiques
+    const ratings = roster.feedback.map(f => f.rating);
+    const averageRating = (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1);
+    const ratingCounts = {
+      5: ratings.filter(r => r === 5).length,
+      4: ratings.filter(r => r === 4).length,
+      3: ratings.filter(r => r === 3).length,
+      2: ratings.filter(r => r === 2).length,
+      1: ratings.filter(r => r === 1).length
+    };
+
+    // Créer l'embed principal
+    const embed = new EmbedBuilder()
+      .setColor(0xf39c12)
+      .setTitle('⭐ Résumé des feedbacks')
+      .setDescription(`**${roster.composition.name}**\n\n📊 Moyenne: **${averageRating}/5** (${roster.feedback.length} avis)`)
+      .addFields(
+        { 
+          name: '📈 Répartition', 
+          value: `⭐⭐⭐⭐⭐ ${ratingCounts[5]}\n⭐⭐⭐⭐ ${ratingCounts[4]}\n⭐⭐⭐ ${ratingCounts[3]}\n⭐⭐ ${ratingCounts[2]}\n⭐ ${ratingCounts[1]}`,
+          inline: true
+        }
+      )
+      .setTimestamp();
+
+    // Ajouter les commentaires s'il y en a
+    const comments = roster.feedback.filter(f => f.comment && f.comment.trim().length > 0);
+    if (comments.length > 0) {
+      const commentText = comments.map((f, index) => {
+        const stars = '⭐'.repeat(f.rating);
+        const username = f.username || 'Anonyme';
+        return `**${username}** ${stars}\n> ${f.comment}`;
+      }).join('\n\n');
+
+      // Discord limite les field values à 1024 caractères
+      if (commentText.length <= 1024) {
+        embed.addFields({ name: '💬 Commentaires', value: commentText, inline: false });
+      } else {
+        // Diviser en plusieurs fields si nécessaire
+        const chunks = [];
+        let currentChunk = '';
+        for (const comment of comments.map((f, index) => {
+          const stars = '⭐'.repeat(f.rating);
+          const username = f.username || 'Anonyme';
+          return `**${username}** ${stars}\n> ${f.comment}`;
+        })) {
+          if ((currentChunk + '\n\n' + comment).length > 1024) {
+            chunks.push(currentChunk);
+            currentChunk = comment;
+          } else {
+            currentChunk += (currentChunk ? '\n\n' : '') + comment;
+          }
+        }
+        if (currentChunk) chunks.push(currentChunk);
+
+        embed.addFields({ name: '💬 Commentaires (1/2)', value: chunks[0], inline: false });
+        if (chunks[1]) {
+          embed.addFields({ name: '💬 Commentaires (2/2)', value: chunks[1], inline: false });
+        }
+      }
+    }
+
+    const result = await this.sendDM(creatorId, { embeds: [embed] });
+    
+    if (result.success) {
+      console.log(`📬 Résumé des feedbacks envoyé au créateur ${creatorId}`);
+    } else {
+      console.error(`❌ Échec envoi résumé feedbacks au créateur ${creatorId}`);
+    }
+
+    return { success: result.success, hasFeedback: true, feedbackCount: roster.feedback.length };
+  }
+
+  /**
    * Programme un rappel automatique 1h avant l'événement
    */
   scheduleReminder(messageId, scheduledDate, roster, messageLink) {

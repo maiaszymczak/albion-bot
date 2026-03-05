@@ -10,6 +10,7 @@ export class RosterManager {
     this.notificationManager = null; // Sera injecté depuis index.js
     this.autoSaveInterval = null; // Référence vers l'interval
     this.loadingPromise = this.loadRosters(); // Stocker la promesse
+    this.deleteTimeouts = new Map(); // Map<messageId, timeoutId> pour gérer les suppressions automatiques
   }
 
   /**
@@ -370,12 +371,70 @@ export class RosterManager {
   /**
    * Ferme les inscriptions
    */
-  close(messageId, requesterId) {
+  close(messageId, requesterId, client = null) {
     const roster = this.rosters.get(messageId);
     if (!roster) return { success: false, error: 'Roster introuvable' };
     if (roster.creatorId !== requesterId) return { success: false, error: 'Permission refusée' };
 
     roster.status = 'closed';
+    
+    // Envoyer le résumé des feedbacks au créateur
+    if (this.notificationManager && roster.feedback && roster.feedback.length > 0) {
+      this.notificationManager.sendFeedbackSummary(requesterId, roster)
+        .catch(error => console.error('❌ Erreur envoi feedback summary:', error));
+    }
+    
+    // Programmer la suppression automatique dans 1 heure
+    const timeoutId = setTimeout(async () => {
+      console.log(`⏰ Suppression automatique du roster ${messageId} après 1h`);
+      
+      // Récupérer le roster et le channel
+      const rosterToDelete = this.rosters.get(messageId);
+      if (rosterToDelete && rosterToDelete.channelId && rosterToDelete.guildId) {
+        try {
+          // Utiliser le client passé en paramètre ou celui du notificationManager
+          const botClient = client || this.notificationManager?.client;
+          if (botClient) {
+            const channel = await botClient.channels.fetch(rosterToDelete.channelId);
+            if (channel) {
+              await channel.messages.delete(messageId);
+              console.log(`✅ Message ${messageId} supprimé`);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Erreur lors de la suppression du message ${messageId}:`, error);
+        }
+      }
+      
+      // Supprimer le roster de la Map
+      this.rosters.delete(messageId);
+      this.deleteTimeouts.delete(messageId);
+      await this.saveRosters();
+    }, 3600000); // 1 heure = 3600000 ms
+    
+    this.deleteTimeouts.set(messageId, timeoutId);
+    
+    return { success: true, roster };
+  }
+
+  /**
+   * Rouvre un roster fermé (créateur uniquement)
+   */
+  reopen(messageId, requesterId) {
+    const roster = this.rosters.get(messageId);
+    if (!roster) return { success: false, error: 'Roster introuvable' };
+    if (roster.creatorId !== requesterId) return { success: false, error: 'Permission refusée' };
+    if (roster.status !== 'closed') return { success: false, error: 'Ce roster n\'est pas fermé' };
+
+    // Annuler le timeout de suppression si existant
+    const timeoutId = this.deleteTimeouts.get(messageId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.deleteTimeouts.delete(messageId);
+      console.log(`⏰ Annulation de la suppression automatique du roster ${messageId}`);
+    }
+
+    roster.status = 'open';
     return { success: true, roster };
   }
 
