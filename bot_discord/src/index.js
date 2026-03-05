@@ -319,6 +319,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
       // Boutons de sélection de rôle
       if (interaction.customId.startsWith('signup_')) {
+        await interaction.deferReply({ ephemeral: true }); // Éviter timeout 3 secondes
+        
         const rosterId = interaction.message.id;
         console.log(`🔍 Recherche roster ID: ${rosterId}`);
         const roster = rosterManager.getRoster(rosterId);
@@ -326,7 +328,7 @@ client.on(Events.InteractionCreate, async interaction => {
         if (!roster) {
           console.log(`❌ Roster ${rosterId} introuvable dans la Map`);
           console.log(`📋 Rosters disponibles:`, Array.from(rosterManager.rosters.keys()));
-          await interaction.reply({ content: '❌ Roster introuvable', ephemeral: true });
+          await interaction.editReply({ content: '❌ Roster introuvable' });
           return;
         }
         
@@ -359,9 +361,8 @@ client.on(Events.InteractionCreate, async interaction => {
         
         // Si déjà inscrit dans le MÊME rôle, on refuse
         if (currentRole === capitalizedRole) {
-          await interaction.reply({ 
-            content: `❌ Vous êtes déjà inscrit comme **${capitalizedRole}** !`, 
-            ephemeral: true 
+          await interaction.editReply({ 
+            content: `❌ Vous êtes déjà inscrit comme **${capitalizedRole}** !`
           });
           return;
         }
@@ -370,9 +371,8 @@ client.on(Events.InteractionCreate, async interaction => {
         if (currentRole) {
           const signoutResult = rosterManager.signout(rosterId, interaction.user.id);
           if (!signoutResult.success) {
-            await interaction.reply({ 
-              content: `❌ Erreur lors de la désinscription : ${signoutResult.error}`, 
-              ephemeral: true 
+            await interaction.editReply({ 
+              content: `❌ Erreur lors de la désinscription : ${signoutResult.error}`
             });
             return;
           }
@@ -387,11 +387,9 @@ client.on(Events.InteractionCreate, async interaction => {
           ? `🔄 Changement de rôle : **${currentRole}** → **${capitalizedRole}**\n\nChoisissez votre arme :\n\n💡 **Astuce :** Tapez \`/weapon\` ou \`/armor\` pour rechercher un équipement spécifique avec autocomplétion !`
           : `Choisissez votre arme pour le rôle **${capitalizedRole}** :\n\n💡 **Astuce :** Tapez \`/weapon\` ou \`/armor\` pour rechercher un équipement spécifique avec autocomplétion !`;
         
-        const response = await interaction.reply({
+        await interaction.editReply({
           content: messageContent,
-          components: [weaponMenu],
-          ephemeral: true,
-          fetchReply: true
+          components: [weaponMenu]
         });
         
         // Auto-désactiver après 60 secondes
