@@ -277,6 +277,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
       // Bouton "Se désinscrire"
       if (interaction.customId === 'signout') {
+        await interaction.deferUpdate();
+        
         const rosterId = interaction.message.id;
         const result = rosterManager.signout(rosterId, interaction.user.id, interaction.user.username);
         
@@ -286,18 +288,20 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
           
-          await interaction.update({
+          await interaction.editReply({
             embeds: [embed],
             components: buttons
           });
         } else {
-          await interaction.reply({ content: `❌ ${result.error || result.error || result.message || 'Erreur' || 'Une erreur est survenue'}`, ephemeral: true });
+          await interaction.followUp({ content: `❌ ${result.error || result.message || 'Erreur'}`, ephemeral: true });
         }
         return;
       }
 
       // Bouton "Fermer"
       if (interaction.customId === 'close_signup') {
+        await interaction.deferUpdate();
+        
         const rosterId = interaction.message.id;
         const result = rosterManager.close(rosterId, interaction.user.id);
         
@@ -307,7 +311,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
           
-          await interaction.update({
+          await interaction.editReply({
             embeds: [embed],
             components: buttons
           });
@@ -449,6 +453,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
       // Bouton "Marquer terminé"
       if (interaction.customId === 'complete_roster') {
+        await interaction.deferUpdate();
+        
         const rosterId = interaction.message.id;
         const result = rosterManager.completeRoster(rosterId, interaction.user.id);
         
@@ -458,7 +464,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
           
-          await interaction.update({
+          await interaction.editReply({
             embeds: [embed],
             components: buttons
           });
@@ -657,10 +663,13 @@ client.on(Events.InteractionCreate, async interaction => {
           return;
         }
 
+        // Defer pour éviter timeout
+        await interaction.deferUpdate();
+
         // Vérifier que le roster existe
         const roster = rosterManager.getRoster(rosterId);
         if (!roster) {
-          await interaction.reply({ content: '❌ Roster introuvable.', ephemeral: true });
+          await interaction.followUp({ content: '❌ Roster introuvable.', ephemeral: true });
           return;
         }
 
@@ -679,7 +688,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const memberIndex = oldSignups.findIndex(s => s.userId === userId);
           
           if (memberIndex === -1) {
-            await interaction.update({ 
+            await interaction.editReply({ 
               content: '❌ Membre introuvable', 
               components: [] 
             });
@@ -722,7 +731,7 @@ client.on(Events.InteractionCreate, async interaction => {
             components: buttons
           });
 
-          await interaction.update({ 
+          await interaction.editReply({ 
             content: `✅ Membre modifié avec succès : **${newRole}** avec **${weaponName}**!`, 
             components: [] 
           });
@@ -760,12 +769,12 @@ client.on(Events.InteractionCreate, async interaction => {
 
             const swapRow = new ActionRowBuilder().addComponents(addSwapButton);
 
-            await interaction.update({ 
+            await interaction.editReply({ 
               content: `✅ Inscription réussie comme **${capitalizedRole}** avec **${weaponName}**!\n\n💡 Vous pouvez ajouter des builds alternatifs (swaps) que vous savez jouer.`, 
               components: [swapRow]
             });
           } else {
-            await interaction.update({ 
+            await interaction.editReply({ 
               content: `❌ ${result.error || result.message || 'Erreur'}`, 
               components: [] 
             });
