@@ -332,26 +332,18 @@ client.on(Events.InteractionCreate, async interaction => {
         
         console.log(`✅ Roster trouvé: ${roster.composition.name}`);
         
-        // Vérifier si l'utilisateur est déjà inscrit
-        let alreadySignedUp = false;
+        // Vérifier si l'utilisateur est déjà inscrit et le rôle actuel
+        let currentRole = null;
         for (const [roleType, signups] of Object.entries(roster.signups)) {
           if (signups.find(s => s.userId === interaction.user.id)) {
-            alreadySignedUp = true;
+            currentRole = roleType;
             break;
           }
         }
         
         // Vérifier aussi dans la waitlist
         if (roster.waitlist && roster.waitlist.find(w => w.userId === interaction.user.id)) {
-          alreadySignedUp = true;
-        }
-        
-        if (alreadySignedUp) {
-          await interaction.reply({ 
-            content: '❌ Vous êtes déjà inscrit ! Désinscrivez-vous d\'abord pour changer de rôle.', 
-            ephemeral: true 
-          });
-          return;
+          currentRole = 'Waitlist';
         }
         
         const roleType = interaction.customId.split('_')[1];
@@ -365,11 +357,38 @@ client.on(Events.InteractionCreate, async interaction => {
         };
         const capitalizedRole = roleMapping[roleType.toLowerCase()] || roleType.charAt(0).toUpperCase() + roleType.slice(1);
         
+        // Si déjà inscrit dans le MÊME rôle, on refuse
+        if (currentRole === capitalizedRole) {
+          await interaction.reply({ 
+            content: `❌ Vous êtes déjà inscrit comme **${capitalizedRole}** !`, 
+            ephemeral: true 
+          });
+          return;
+        }
+        
+        // Si inscrit dans un AUTRE rôle, on désinscrit automatiquement
+        if (currentRole) {
+          const signoutResult = rosterManager.signout(rosterId, interaction.user.id);
+          if (!signoutResult.success) {
+            await interaction.reply({ 
+              content: `❌ Erreur lors de la désinscription : ${signoutResult.error}`, 
+              ephemeral: true 
+            });
+            return;
+          }
+          // Message informatif : on change de rôle
+          console.log(`🔄 ${interaction.user.username} change de ${currentRole} vers ${capitalizedRole}`);
+        }
+        
         // Générer le menu de sélection d'armes avec le rosterId
         const weaponMenu = generateWeaponMenu(capitalizedRole, rosterId);
         
+        const messageContent = currentRole 
+          ? `🔄 Changement de rôle : **${currentRole}** → **${capitalizedRole}**\n\nChoisissez votre arme :\n\n💡 **Astuce :** Tapez \`/weapon\` ou \`/armor\` pour rechercher un équipement spécifique avec autocomplétion !`
+          : `Choisissez votre arme pour le rôle **${capitalizedRole}** :\n\n💡 **Astuce :** Tapez \`/weapon\` ou \`/armor\` pour rechercher un équipement spécifique avec autocomplétion !`;
+        
         const response = await interaction.reply({
-          content: `Choisissez votre arme pour le rôle **${capitalizedRole}** :\n\n💡 **Astuce :** Tapez \`/weapon\` ou \`/armor\` pour rechercher un équipement spécifique avec autocomplétion !`,
+          content: messageContent,
           components: [weaponMenu],
           ephemeral: true,
           fetchReply: true
