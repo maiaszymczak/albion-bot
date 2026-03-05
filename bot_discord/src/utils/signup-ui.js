@@ -144,6 +144,12 @@ export function generateSignupEmbed(roster) {
     description += `\n⏰ **Prévu pour:** <t:${timestamp}:F> (<t:${timestamp}:R>)`;
   }
   
+  // Afficher le countdown de suppression si fermé
+  if (roster.status === 'closed' && roster.deleteScheduledAt) {
+    const deleteTimestamp = Math.floor(new Date(roster.deleteScheduledAt).getTime() / 1000);
+    description += `\n⏳ **Suppression auto:** <t:${deleteTimestamp}:R>`;
+  }
+  
   // Afficher feedback si terminé
   if (roster.status === 'completed' && roster.feedback && roster.feedback.length > 0) {
     const avgRating = roster.feedback.reduce((sum, f) => sum + f.rating, 0) / roster.feedback.length;

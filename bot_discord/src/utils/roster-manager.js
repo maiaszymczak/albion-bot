@@ -77,7 +77,8 @@ export class RosterManager {
       createdAt: new Date(),
       scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
       notificationsSent: false,
-      feedback: [] // [{ userId, rating, comment }]
+      feedback: [], // [{ userId, rating, comment }]
+      deleteScheduledAt: null // Date de suppression programmée
     };
     
     this.rosters.set(messageId, rosterData);
@@ -384,9 +385,12 @@ export class RosterManager {
         .catch(error => console.error('❌ Erreur envoi feedback summary:', error));
     }
     
-    // Programmer la suppression automatique dans 1 heure
+    // Programmer la suppression automatique dans 5 minutes
+    const deleteTime = new Date(Date.now() + 300000); // 5 minutes = 300000 ms
+    roster.deleteScheduledAt = deleteTime;
+    
     const timeoutId = setTimeout(async () => {
-      console.log(`⏰ Suppression automatique du roster ${messageId} après 1h`);
+      console.log(`⏰ Suppression automatique du roster ${messageId} après 5 min`);
       
       // Récupérer le roster et le channel
       const rosterToDelete = this.rosters.get(messageId);
@@ -410,7 +414,7 @@ export class RosterManager {
       this.rosters.delete(messageId);
       this.deleteTimeouts.delete(messageId);
       await this.saveRosters();
-    }, 3600000); // 1 heure = 3600000 ms
+    }, 300000); // 5 minutes = 300000 ms
     
     this.deleteTimeouts.set(messageId, timeoutId);
     
@@ -431,6 +435,7 @@ export class RosterManager {
     if (timeoutId) {
       clearTimeout(timeoutId);
       this.deleteTimeouts.delete(messageId);
+      roster.deleteScheduledAt = null;
       console.log(`⏰ Annulation de la suppression automatique du roster ${messageId}`);
     }
 
