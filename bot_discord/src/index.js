@@ -586,10 +586,11 @@ client.on(Events.InteractionCreate, async interaction => {
 
     } catch (error) {
       console.error('❌ Erreur lors du traitement du bouton:', error);
+      const errorMessage = `❌ Erreur : ${error.message || 'Une erreur est survenue'}`;
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
+        await interaction.followUp({ content: errorMessage, ephemeral: true });
       } else {
-        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
+        await interaction.reply({ content: errorMessage, ephemeral: true });
       }
     }
     return;
@@ -1182,10 +1183,11 @@ client.on(Events.InteractionCreate, async interaction => {
 
     } catch (error) {
       console.error('❌ Erreur lors du traitement du menu:', error);
+      const errorMessage = `❌ Erreur : ${error.message || 'Une erreur est survenue'}`;
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
+        await interaction.followUp({ content: errorMessage, ephemeral: true });
       } else {
-        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
+        await interaction.reply({ content: errorMessage, ephemeral: true });
       }
     }
     return;
@@ -1494,10 +1496,11 @@ client.on(Events.InteractionCreate, async interaction => {
 
     } catch (error) {
       console.error('❌ Erreur lors du traitement du modal:', error);
+      const errorMessage = `❌ Erreur : ${error.message || 'Une erreur est survenue'}`;
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: '❌ Une erreur est survenue!', ephemeral: true });
+        await interaction.followUp({ content: errorMessage, ephemeral: true });
       } else {
-        await interaction.reply({ content: '❌ Une erreur est survenue!', ephemeral: true });
+        await interaction.reply({ content: errorMessage, ephemeral: true });
       }
     }
   }
