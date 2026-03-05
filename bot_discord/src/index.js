@@ -14,6 +14,22 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/**
+ * Fetch un channel de manière sécurisée (pour gros serveurs)
+ * @param {Interaction} interaction 
+ * @returns {Promise<Channel>}
+ */
+async function fetchChannel(interaction) {
+  if (interaction.channel) return interaction.channel;
+  
+  // Si le channel n'est pas en cache, le fetch
+  if (interaction.channelId) {
+    return await interaction.client.channels.fetch(interaction.channelId);
+  }
+  
+  throw new Error('Channel introuvable');
+}
+
 // Création du serveur HTTP pour Render
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -487,7 +503,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
 
-          const channel = interaction.channel;
+          const channel = await fetchChannel(interaction);
           const rosterMessage = await channel.messages.fetch(rosterId);
           await rosterMessage.edit({
             embeds: [embed],
@@ -678,7 +694,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
 
-          const channel = interaction.channel;
+          const channel = await fetchChannel(interaction);
           const rosterMessage = await channel.messages.fetch(rosterId);
           await rosterMessage.edit({
             embeds: [embed],
@@ -707,7 +723,7 @@ client.on(Events.InteractionCreate, async interaction => {
             const isCreator = roster.creatorId === interaction.user.id;
             const buttons = generateSignupButtons(roster, isCreator);
 
-            const channel = interaction.channel;
+            const channel = await fetchChannel(interaction);
             const rosterMessage = await channel.messages.fetch(rosterId);
             await rosterMessage.edit({
               embeds: [embed],
@@ -907,7 +923,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = updatedRoster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(updatedRoster, isCreator);
 
-          const channel = interaction.channel;
+          const channel = await fetchChannel(interaction);
           const rosterMessage = await channel.messages.fetch(rosterId);
           await rosterMessage.edit({
             embeds: [embed],
@@ -957,7 +973,7 @@ client.on(Events.InteractionCreate, async interaction => {
             const isCreator = roster.creatorId === interaction.user.id;
             const buttons = generateSignupButtons(roster, isCreator);
 
-            const channel = interaction.channel;
+            const channel = await fetchChannel(interaction);
             const rosterMessage = await channel.messages.fetch(rosterId);
             await rosterMessage.edit({
               embeds: [embed],
@@ -1126,7 +1142,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
 
-          const channel = interaction.channel;
+          const channel = await fetchChannel(interaction);
           const rosterMessage = await channel.messages.fetch(rosterId);
           await rosterMessage.edit({
             embeds: [embed],
@@ -1236,7 +1252,7 @@ client.on(Events.InteractionCreate, async interaction => {
           const isCreator = roster.creatorId === interaction.user.id;
           const buttons = generateSignupButtons(roster, isCreator);
 
-          const channel = interaction.channel;
+          const channel = await fetchChannel(interaction);
           const rosterMessage = await channel.messages.fetch(rosterId);
           await rosterMessage.edit({
             embeds: [embed],
@@ -1268,7 +1284,7 @@ client.on(Events.InteractionCreate, async interaction => {
             const isCreator = roster.creatorId === interaction.user.id;
             const buttons = generateSignupButtons(roster, isCreator);
 
-            const channel = interaction.channel;
+            const channel = await fetchChannel(interaction);
             const rosterMessage = await channel.messages.fetch(rosterId);
             await rosterMessage.edit({
               embeds: [embed],
@@ -1351,7 +1367,7 @@ client.on(Events.InteractionCreate, async interaction => {
           Scout: parseInt(interaction.fields.getTextInputValue('quota_scout')) || 0
         };
 
-        const channel = interaction.channel;
+        const channel = await fetchChannel(interaction);
         const messages = await channel.messages.fetch({ limit: 10 });
         let rosterId = null;
         
@@ -1408,7 +1424,7 @@ client.on(Events.InteractionCreate, async interaction => {
           return;
         }
 
-        const channel = interaction.channel;
+        const channel = await fetchChannel(interaction);
         const messages = await channel.messages.fetch({ limit: 10 });
         let rosterId = null;
         
