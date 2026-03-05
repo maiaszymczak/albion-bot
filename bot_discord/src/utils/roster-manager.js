@@ -201,16 +201,16 @@ export class RosterManager {
       }
     }
 
-    // Notifier le créateur de la nouvelle inscription
-    if (this.notificationManager) {
-      this.notificationManager.notifyCreatorNewSignup(
-        roster.creatorId,
-        username,
-        role,
-        weapon,
-        roster.composition.name || 'Composition'
-      );
-    }
+    // Notifications d'inscription désactivées
+    // if (this.notificationManager) {
+    //   this.notificationManager.notifyCreatorNewSignup(
+    //     roster.creatorId,
+    //     username,
+    //     role,
+    //     weapon,
+    //     roster.composition.name || 'Composition'
+    //   );
+    // }
 
     this.saveRosters();
     return { success: true, roster };
