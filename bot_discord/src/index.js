@@ -381,6 +381,7 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         
         // Générer le menu de sélection d'armes avec le rosterId
+        console.log(`🎯 Génération menu armes - Role: ${capitalizedRole}, RosterId: ${rosterId}`);
         const weaponMenu = generateWeaponMenu(capitalizedRole, rosterId);
         
         const messageContent = currentRole 
@@ -636,6 +637,8 @@ client.on(Events.InteractionCreate, async interaction => {
         const parts = interaction.customId.split('_');
         const roleType = parts[2];
         const rosterId = parts[3]; // Extraire le rosterId du customId
+        console.log(`🔍 Menu arme - CustomId: ${interaction.customId}, Parts: ${parts.join('|')}, RosterId: ${rosterId}`);
+        
         // Normaliser la casse
         const roleMapping = {
           'tank': 'Tank',
