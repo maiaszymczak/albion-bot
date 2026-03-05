@@ -64,7 +64,7 @@ export class RosterManager {
   /**
    * Crée un nouveau roster
    */
-  createRoster(messageId, creatorId, composition, scheduledDate = null, guildId = null, channelId = null) {
+  createRoster(messageId, creatorId, composition, scheduledDate = null, guildId = null, channelId = null, compositionMessageId = null) {
     const rosterData = {
       creatorId,
       guildId,
@@ -78,7 +78,8 @@ export class RosterManager {
       scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
       notificationsSent: false,
       feedback: [], // [{ userId, rating, comment }]
-      deleteScheduledAt: null // Date de suppression programmée
+      deleteScheduledAt: null, // Date de suppression programmée
+      compositionMessageId // ID du message de compo original
     };
     
     this.rosters.set(messageId, rosterData);
@@ -401,8 +402,19 @@ export class RosterManager {
           if (botClient) {
             const channel = await botClient.channels.fetch(rosterToDelete.channelId);
             if (channel) {
+              // Supprimer le message du roster
               await channel.messages.delete(messageId);
-              console.log(`✅ Message ${messageId} supprimé`);
+              console.log(`✅ Message roster ${messageId} supprimé`);
+              
+              // Supprimer aussi le message de composition si existant
+              if (rosterToDelete.compositionMessageId) {
+                try {
+                  await channel.messages.delete(rosterToDelete.compositionMessageId);
+                  console.log(`✅ Message composition ${rosterToDelete.compositionMessageId} supprimé`);
+                } catch (error) {
+                  console.error(`⚠️ Message composition ${rosterToDelete.compositionMessageId} déjà supprimé ou introuvable`);
+                }
+              }
             }
           }
         } catch (error) {

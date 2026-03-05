@@ -269,7 +269,8 @@ client.on(Events.InteractionCreate, async interaction => {
           { name: compositionName, members },
           null, // scheduledDate (peut être ajouté plus tard)
           interaction.guild?.id,
-          interaction.channel?.id
+          interaction.channel?.id,
+          originalMessage.id // ID du message de composition original
         );
 
         return;
