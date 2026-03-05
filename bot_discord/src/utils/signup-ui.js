@@ -209,28 +209,26 @@ export function generateSignupButtons(roster, isCreator = false) {
       .setStyle(ButtonStyle.Danger)
   );
   
-  // Bouton Modifier (visible tant que le roster est ouvert)
-  if (roster.status === 'open') {
+  // Boutons admin (uniquement pour le créateur)
+  if (isCreator) {
+    // Bouton Modifier (toujours visible pour le créateur)
     buttons.push(
       new ButtonBuilder()
         .setCustomId('edit_roster')
         .setLabel('✏️ Modifier')
         .setStyle(ButtonStyle.Secondary)
     );
-  }
-  
-  // Bouton Rouvrir (visible si le roster est fermé et que c'est le créateur)
-  if (roster.status === 'closed' && isCreator) {
-    buttons.push(
-      new ButtonBuilder()
-        .setCustomId('reopen_roster')
-        .setLabel('🔓 Rouvrir')
-        .setStyle(ButtonStyle.Success)
-    );
-  }
-  
-  // Boutons admin (uniquement pour le créateur)
-  if (isCreator) {
+    
+    // Bouton Rouvrir (visible si le roster est fermé)
+    if (roster.status === 'closed') {
+      buttons.push(
+        new ButtonBuilder()
+          .setCustomId('reopen_roster')
+          .setLabel('🔓 Rouvrir')
+          .setStyle(ButtonStyle.Success)
+      );
+    }
+    
     // Bouton pour marquer comme terminé
     if (roster.status !== 'completed' && roster.status !== 'closed') {
       buttons.push(
